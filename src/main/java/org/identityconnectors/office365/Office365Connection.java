@@ -69,8 +69,7 @@ public class Office365Connection {
 	
     private Office365Configuration configuration;
     private String token = null; // TODO Handle expiring tokens
-    public static final String API_VERSION = "2013-04-05"; 
-    public static final String API_VERSION_PREVIEW = "2013-04-10-preview";
+    public static final String API_VERSION = "2013-11-08"; 
     
     public static final Uid SUCCESS_UID = new Uid("fffffff-ffff-ffff-ffff-ffffffffffff");
     

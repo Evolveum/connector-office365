@@ -323,7 +323,7 @@ public class Office365UserOps {
         try {
             JSONObject lic = convertLicenseToJson(license);
 
-            Uid returnedUid = this.connector.getConnection().postRequest("/users/"+uid.getUidValue()+"/assignLicense?api-version="+Office365Connection.API_VERSION_PREVIEW, lic);
+            Uid returnedUid = this.connector.getConnection().postRequest("/users/"+uid.getUidValue()+"/assignLicense?api-version="+Office365Connection.API_VERSION, lic);
             
             if (returnedUid != null && returnedUid.equals(Office365Connection.SUCCESS_UID)) {
                 log.info("License assigned successfully to {0}", uid.getUidValue());
