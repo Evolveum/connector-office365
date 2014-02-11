@@ -72,6 +72,7 @@ public class Office365Connector implements
 
     public static final String LICENSE_ATTR = "licenses";
     public static final String USAGELOCATION_ATTR = "usageLocation";
+    public static final String IMMUTABLEID_ATTR = "immutableId";
     
     /**
      * Setup logging for the {@link Office365Connector}.
@@ -143,13 +144,13 @@ public class Office365Connector implements
             log.error("Name attribute is empty");
             throw new IllegalArgumentException("Name is mandatory on create events");
         }
-        
-        if (this.connection.isUserInAFederatedDomain(name.getNameValue())) {
-            log.error("User is in a federated domain, thsi is not currently supported");
-            throw new IllegalArgumentException("User ("+name.getNameValue()+") is in a federated domain, thsi is not currently supported");
-        }
 
         if (objectClass.equals(ObjectClass.ACCOUNT)) {
+            if (this.connection.isUserInAFederatedDomain(name.getNameValue()) && (AttributeUtil.toMap(createAttributes).get(IMMUTABLEID_ATTR) == null)) {
+                log.error("User is in a federated domain, though no immutableID has been passed, this is required for a Federated User");
+                throw new IllegalArgumentException("User ("+name.getNameValue()+") is in a federated domain, though no immutableID has been passed, this is required for a Federated User");
+            }
+
         	return userOps.createUser(name, createAttributes);
         } else {
         	log.error("Invalid objectClass {0} specified", objectClass.getObjectClassValue());
@@ -249,42 +250,55 @@ public class Office365Connector implements
                 Office365Connector.class);
 
         // We only support Users at the moment
-        ObjectClassInfoBuilder objectClassInfoBuilder = new ObjectClassInfoBuilder();
-        objectClassInfoBuilder.setType(ObjectClass.ACCOUNT_NAME);
+        ObjectClassInfoBuilder objectClassInfoBuilderUser = new ObjectClassInfoBuilder();
+        objectClassInfoBuilderUser.setType(ObjectClass.ACCOUNT_NAME);
 
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("accountEnabled", Boolean.class, EnumSet.of(Flags.REQUIRED)));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("city", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("country", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("department", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("displayName", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("facsimileTelephoneNumber", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("givenName", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("jobTitle", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("accountEnabled", Boolean.class, EnumSet.of(Flags.REQUIRED)));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("city", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("country", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("department", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("displayName", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("facsimileTelephoneNumber", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("givenName", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("jobTitle", String.class));
         // license format   licensename:planname:planname:...
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build(LICENSE_ATTR, String.class, EnumSet.of(Flags.MULTIVALUED)));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("mail", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("mailNickname", String.class, EnumSet.of(Flags.REQUIRED)));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("mobile", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("otherMails", String.class, EnumSet.of(Flags.MULTIVALUED)));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build(LICENSE_ATTR, String.class, EnumSet.of(Flags.MULTIVALUED)));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("mail", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("mailNickname", String.class, EnumSet.of(Flags.REQUIRED)));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("mobile", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("otherMails", String.class, EnumSet.of(Flags.MULTIVALUED)));
 
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("forceChangePasswordNextLogin", Boolean.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("physicalDeliveryOfficeName", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("postalCode", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("preferredLanguage", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("proxyAddresses", String.class, EnumSet.of(Flags.MULTIVALUED)));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("state", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("streetAddress", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("surname", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("telephoneNumber", String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build("thumbnailPhoto", byte[].class));  
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("forceChangePasswordNextLogin", Boolean.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("physicalDeliveryOfficeName", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("postalCode", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("preferredLanguage", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("proxyAddresses", String.class, EnumSet.of(Flags.MULTIVALUED)));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("state", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("streetAddress", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("surname", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("telephoneNumber", String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("thumbnailPhoto", byte[].class));  
 
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build(USAGELOCATION_ATTR, String.class));
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build(Name.NAME, String.class, EnumSet.of(Flags.REQUIRED)));  // userPrinciaplName 
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build(IMMUTABLEID_ATTR, String.class)); // Mandatory if its a federated domain
+        
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build(USAGELOCATION_ATTR, String.class));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build(Name.NAME, String.class, EnumSet.of(Flags.REQUIRED)));  // userPrinciaplName 
         // Operation Attributes
-        objectClassInfoBuilder.addAttributeInfo(AttributeInfoBuilder.build(OperationalAttributes.PASSWORD_NAME, GuardedString.class, EnumSet.of(Flags.NOT_READABLE, Flags.NOT_RETURNED_BY_DEFAULT)));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build(OperationalAttributes.PASSWORD_NAME, GuardedString.class, EnumSet.of(Flags.NOT_READABLE, Flags.NOT_RETURNED_BY_DEFAULT)));
 
-        ObjectClassInfo oci = objectClassInfoBuilder.build();
+        ObjectClassInfo oci = objectClassInfoBuilderUser.build();
         schemaBuilder.defineObjectClass(oci);
+
+        ObjectClassInfoBuilder objectClassInfoBuilderGroup = new ObjectClassInfoBuilder();
+        objectClassInfoBuilderGroup.setType(ObjectClass.GROUP_NAME);
+        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("description", String.class));
+        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("displayName", String.class, EnumSet.of(Flags.REQUIRED)));
+        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("mail", String.class));
+        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("mailEnabled", Boolean.class, EnumSet.of(Flags.REQUIRED)));
+        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build(Name.NAME, String.class, EnumSet.of(Flags.REQUIRED))); // mailNickname
+        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("proxyAddresses", String.class, EnumSet.of(Flags.MULTIVALUED)));
+        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("securityEnabled", Boolean.class));
+        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("members", String.class, EnumSet.of(Flags.MULTIVALUED)));
 
         this.schema = schemaBuilder.build();
     }

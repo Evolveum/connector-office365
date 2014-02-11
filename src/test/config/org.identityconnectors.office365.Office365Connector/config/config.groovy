@@ -38,10 +38,10 @@ connector.i3.wrong.password=new GuardedString("".toCharArray())
 
 configuration{
     apiEndPoint = "graph.windows.net"
-    tenancy = "live.salfordsoftware.co.uk"
-    symetricKey = new GuardedString("g4HaR0J1Y1vNNIyJCbMQrzLix27wBy6dwZjzJG/QOs0=".toCharArray())
+    tenancy = "proofidfeb14.onmicrosoft.com"
+    symetricKey = new GuardedString("cbtCV+GYWm1Zir/ZsaOEadvJxUuO2QX+f86EW2rHuxc=".toCharArray())
     authUrl = "https://accounts.accesscontrol.windows.net/tokens/OAuth/2"
-    principalID = "aa8de79f-4c6a-4f81-bcc7-61262226256a"
+    principalID = "28fa027a-0159-40cc-9449-a0fb08a41723"
     resourceID = "00000002-0000-0000-c000-000000000000";
     acsPrincipalID = "00000001-0000-0000-c000-000000000000";
 }

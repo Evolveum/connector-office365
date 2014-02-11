@@ -23,6 +23,7 @@
  */
 package org.identityconnectors.office365;
 
+import org.identityconnectors.common.Base64;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.GuardedString;
 import org.identityconnectors.framework.api.APIConfiguration;
@@ -66,12 +67,17 @@ public class Office365ConnectorTests {
     private static final String RESOURCEID = properties.getStringProperty("configuration.resourceID");
     private static final String ACSPRINCIPALID = properties.getStringProperty("configuration.acsPrincipalID");
 
-    private static final String TEST_FEDERATED_DOMAIN = "staff.dev.justidm.com";
-    private static final String TEST_MANAGED_DOMAIN = "paulh.salfordsoftware.co.uk";
-    
-    private static final String TEST_FEDERATED_USER = "jtest1@"+TEST_FEDERATED_DOMAIN;
-    private static final String TEST_MANAGED_USER = "jtest1@"+TEST_MANAGED_DOMAIN;
-    
+    private static final String TEST_FEDERATED_DOMAIN = "feb14-fed.pheaney-dev.co.uk";
+    private static final String TEST_MANAGED_DOMAIN = "ProofIDFeb14.onmicrosoft.com";
+
+    private static final String TEST_FEDERATED_USER = "icf-test1@"+TEST_FEDERATED_DOMAIN;
+    private static final String TEST_MANAGED_USER = "icf-test1@"+TEST_MANAGED_DOMAIN;
+
+    private static final String LICENSE_PLAN = "ENTERPRISEPACK"; // For academia STANDARDWOFFPACK_STUDENT
+    private static final String LICNESE_PLAN_ID= "6fd2c87f-b296-42f0-b197-1e91e994b900"; // For academia 314c4481-f395-4525-be8b-2ec4bb1e9d91
+    private static final String EXCHANGE_SERVICE = "EXCHANGE_S_ENTERPRISE"; // For academia EXCHANGE_S_STANDARD
+    private static final String EXCHANGE_SERVICE_ID = "efb87545-963c-4e0d-99df-69c6916d9eb0"; // For academia 9aaf7827-d63c-4b61-89c3-182f06f82e5c
+
     //set up logging
     private static final Log LOGGER = Log.getLog(Office365ConnectorTests.class);
 
@@ -125,17 +131,17 @@ public class Office365ConnectorTests {
     @Test
     public void testCreate() {
         Office365Configuration config = getConfiguration();
-        
+
         Office365Connection o365Conn = Office365Connection.createConnection(config);
-        
+
         String token = Office365Connection.createToken(config);
         Assert.assertNotNull(token);
-        
+
         try {
             JSONObject obj = new JSONObject();
             obj.put("accountEnabled", true);
-            obj.put("displayName", "JustIDM Test1");
-            obj.put("mailNickname", "jtest1");
+            obj.put("displayName", "OpenICF Test1");
+            obj.put("mailNickname", "icf-test1");
             obj.put("userPrincipalName", TEST_MANAGED_USER);
             JSONObject pwd = new JSONObject();
             pwd.put("password", "Test1234!");
@@ -145,7 +151,7 @@ public class Office365ConnectorTests {
 
             LOGGER.info("About to create using  {0}", obj.toString());
             Uid uid = o365Conn.postRequest("/users?api-version="+Office365Connection.API_VERSION, obj);
-
+            LOGGER.info("Got a UID of {0}", uid);
             Assert.assertNotNull(uid);
         } catch(JSONException je) {
             LOGGER.error(je, "Error creating test create structure");
@@ -187,6 +193,169 @@ public class Office365ConnectorTests {
         Assert.assertTrue(b);
     }
     
+    @Test(dependsOnMethods={"testCreate"})
+    public void testLicenseAssignment() throws JSONException {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        Office365Connector conn = new Office365Connector();
+        conn.init(config);
+
+        Office365UserOps userOps = new Office365UserOps(conn);
+
+        JSONObject obj = o365Conn.getRequest("/users/"+TEST_MANAGED_USER+"/?api-version="+Office365Connection.API_VERSION);
+
+        Uid uid = new Uid(obj.getString("objectId"));
+        // TODO actually assert assigned license is as passed
+
+        boolean b = userOps.assignLicense(uid, LICENSE_PLAN+":EXCHANGE_S_STANDARD");
+        Assert.assertTrue(b);
+    }
+    
+    /*
+     * END non federated
+     */
+    
+    /*
+     * Federated domain
+     */
+    
+    /*
+     * Non federated domain 
+     */
+    
+    @Test
+    public void testCreateFederated() {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        String token = Office365Connection.createToken(config);
+        Assert.assertNotNull(token);
+
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("accountEnabled", true);
+            obj.put("displayName", "OpenICF Test1");
+            obj.put("mailNickname", "icf-test1");
+            obj.put("userPrincipalName", TEST_FEDERATED_USER);
+            JSONObject pwd = new JSONObject();
+            pwd.put("password", "Test1234!");
+            pwd.put("forceChangePasswordNextLogin", true);
+            obj.put("passwordProfile", pwd);
+            obj.put("usageLocation", "GB");
+
+            obj.put("immutableId", Base64.encode("14c6c0c6-66fb-4c3c-a28e-a22a3e778dc4".getBytes()));
+
+            LOGGER.info("About to create using  {0}", obj.toString());
+            Uid uid = o365Conn.postRequest("/users?api-version="+Office365Connection.API_VERSION, obj);
+            LOGGER.info("Got a UID of {0}", uid);
+            Assert.assertNotNull(uid);
+        } catch(JSONException je) {
+            LOGGER.error(je, "Error creating test create structure");
+        }
+    }
+
+    @Test(dependsOnMethods={"testCreateFederated"})
+    public void testModifyFederated() {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        String token = Office365Connection.createToken(config);
+        Assert.assertNotNull(token);
+
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("department", "test");
+            obj.put("usageLocation", "GB");
+
+            boolean b = o365Conn.patchObject("/users/"+TEST_FEDERATED_USER+"?api-version="+Office365Connection.API_VERSION, obj);
+
+            Assert.assertTrue(b);
+        } catch(JSONException je) {
+            LOGGER.error(je, "Error creating test modify structure");
+        }
+    }
+
+    @Test(dependsOnMethods={"testModifyFederated", "testLicenseAssignmentFederated"}, enabled=false)
+    public void testDeleteFederated() {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        String token = Office365Connection.createToken(config);
+        Assert.assertNotNull(token);
+
+        boolean b = o365Conn.deleteRequest("/users/"+TEST_FEDERATED_USER+"?api-version="+Office365Connection.API_VERSION);
+        Assert.assertTrue(b);
+    }
+    
+    @Test(dependsOnMethods={"testCreateFederated"})
+    public void testLicenseAssignmentFederatedWholeSkuALlComponentsListed() throws JSONException {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        Office365Connector conn = new Office365Connector();
+        conn.init(config);
+
+        Office365UserOps userOps = new Office365UserOps(conn);
+
+        JSONObject obj = o365Conn.getRequest("/users/"+TEST_FEDERATED_USER+"/?api-version="+Office365Connection.API_VERSION);
+
+        Uid uid = new Uid(obj.getString("objectId"));
+        // TODO actually assert assigned license is as passed
+
+        boolean b = userOps.assignLicense(uid, LICENSE_PLAN+":EXCHANGE_S_ENTERPRISE:SHAREPOINTENTERPRISE:SHAREPOINTWAC:MCOSTANDARD:OFFICESUBSCRIPTION:RMS_S_ENTERPRISE:YAMMER_ENTERPRISE");
+        Assert.assertTrue(b);
+    }
+
+    @Test(dependsOnMethods={"testCreateFederated"})
+    public void testLicenseAssignmentFederatedWholeSku() throws JSONException {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        Office365Connector conn = new Office365Connector();
+        conn.init(config);
+
+        Office365UserOps userOps = new Office365UserOps(conn);
+
+        JSONObject obj = o365Conn.getRequest("/users/"+TEST_FEDERATED_USER+"/?api-version="+Office365Connection.API_VERSION);
+
+        Uid uid = new Uid(obj.getString("objectId"));
+        // TODO actually assert assigned license is as passed
+
+        boolean b = userOps.assignLicense(uid, LICENSE_PLAN);
+        Assert.assertTrue(b);
+    }
+    
+    @Test
+    public void testLicenseAssignmentFederatedJustExchange() throws JSONException {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        Office365Connector conn = new Office365Connector();
+        conn.init(config);
+
+        Office365UserOps userOps = new Office365UserOps(conn);
+
+        JSONObject obj = o365Conn.getRequest("/users/"+TEST_FEDERATED_USER+"/?api-version="+Office365Connection.API_VERSION);
+
+        Uid uid = new Uid(obj.getString("objectId"));
+        // TODO actually assert assigned license is as passed
+
+        boolean b = userOps.assignLicense(uid, LICENSE_PLAN+":"+EXCHANGE_SERVICE);
+        Assert.assertTrue(b);
+    }
+    
+    /*
+     * END federated domain
+     */
+    
     @Test
     public void testGetTenantDetails() {
         Office365Configuration config = getConfiguration();
@@ -217,11 +386,11 @@ public class Office365ConnectorTests {
         Office365Configuration config = getConfiguration();
 
         Office365Connection o365Conn = Office365Connection.createConnection(config);
-        
-        String planId = o365Conn.getServicePlanId("EXCHANGE_S_STANDARD");
+
+        String planId = o365Conn.getServicePlanId(EXCHANGE_SERVICE);
         System.out.println("Service Plan ID: "+planId);
         Assert.assertNotNull(planId);
-        Assert.assertEquals(planId, "9aaf7827-d63c-4b61-89c3-182f06f82e5c");
+        Assert.assertEquals(planId, EXCHANGE_SERVICE_ID);
     }
     
     @Test
@@ -229,11 +398,11 @@ public class Office365ConnectorTests {
         Office365Configuration config = getConfiguration();
 
         Office365Connection o365Conn = Office365Connection.createConnection(config);
-        
-        String licenseId = o365Conn.getLicensePlanId("STANDARDWOFFPACK_STUDENT");
+
+        String licenseId = o365Conn.getLicensePlanId(LICENSE_PLAN);
         System.out.println("Service license ID: "+licenseId);
         Assert.assertNotNull(licenseId);
-        Assert.assertEquals(licenseId, "314c4481-f395-4525-be8b-2ec4bb1e9d91");
+        Assert.assertEquals(licenseId, LICNESE_PLAN_ID);
     }
     
     @Test
@@ -242,11 +411,11 @@ public class Office365ConnectorTests {
 
         Office365Connector conn = new Office365Connector();
         conn.init(config);
-        
+
         Office365UserOps userOps = new Office365UserOps(conn);
-        
+
         try {
-            JSONObject obj = userOps.convertLicenseToJson("STANDARDWOFFPACK_STUDENT");
+            JSONObject obj = userOps.convertLicenseToJson(LICENSE_PLAN);
             System.out.println(obj);
             Assert.assertNotNull(obj);
         } catch (JSONException je) {
@@ -262,11 +431,11 @@ public class Office365ConnectorTests {
 
         Office365Connector conn = new Office365Connector();
         conn.init(config);
-        
+
         Office365UserOps userOps = new Office365UserOps(conn);
-        
+
         try {
-            JSONObject obj = userOps.convertLicenseToJson("STANDARDWOFFPACK_STUDENT:EXCHANGE_S_STANDARD");
+            JSONObject obj = userOps.convertLicenseToJson(LICENSE_PLAN+":"+EXCHANGE_SERVICE);
             System.out.println(obj);
             Assert.assertNotNull(obj);
         } catch (JSONException je) {
@@ -276,32 +445,12 @@ public class Office365ConnectorTests {
         }
     }
     
-    @Test(dependsOnMethods={"testCreate"})
-    public void testLicenseAssignment() throws JSONException {
-        Office365Configuration config = getConfiguration();
-
-        Office365Connection o365Conn = Office365Connection.createConnection(config);
-        
-        Office365Connector conn = new Office365Connector();
-        conn.init(config);
-        
-        Office365UserOps userOps = new Office365UserOps(conn);
-        
-        JSONObject obj = o365Conn.getRequest("/users/"+TEST_MANAGED_USER+"/?api-version="+Office365Connection.API_VERSION);
-        
-        Uid uid = new Uid(obj.getString("objectId"));
-        // TODO actually assert assigned license is as passed
-        
-        boolean b = userOps.assignLicense(uid, "STANDARDWOFFPACK_STUDENT:EXCHANGE_S_STANDARD");
-        Assert.assertTrue(b);
-    }
-    
     @Test
     public void testGetFederatedDomainDetails() {
         Office365Configuration config = getConfiguration();
 
         Office365Connection o365Conn = Office365Connection.createConnection(config);
-        
+
         Office365Domain dom = o365Conn.getDomain(TEST_FEDERATED_DOMAIN);
         Assert.assertNotNull(dom);
     }
@@ -311,7 +460,7 @@ public class Office365ConnectorTests {
         Office365Configuration config = getConfiguration();
 
         Office365Connection o365Conn = Office365Connection.createConnection(config);
-        
+
         Office365Domain dom = o365Conn.getDomain(TEST_MANAGED_DOMAIN);
         Assert.assertNotNull(dom);
     }
@@ -321,9 +470,9 @@ public class Office365ConnectorTests {
         Office365Configuration config = getConfiguration();
 
         Office365Connection o365Conn = Office365Connection.createConnection(config);
-        
+
         boolean b = o365Conn.isUserInAFederatedDomain(TEST_MANAGED_USER);
-        
+
         Assert.assertFalse(b);
     }
     

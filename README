@@ -13,9 +13,7 @@ When assigning a license the usageLocation needs to be set.
 
 LIMITATIONS
 * Only currently handles users
-* Unable to create federated users via Graph API
 * Does not currently support change of UPN
-
 
 
 TODO
@@ -23,3 +21,4 @@ TODO
 * Multi valued attributes
 * Allow UPN change 
 * Test for query
+* Unable to create federated users via Graph API

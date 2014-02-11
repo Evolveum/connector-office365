@@ -214,8 +214,15 @@ public class Office365Connection {
             HttpResponse response = httpClient.execute(post);
             HttpEntity entity = response.getEntity();
 
+            log.info("Status code from postRequest is {0}", response.getStatusLine().getStatusCode());
+
             // assignLicense returns 200
-            if (response.getStatusLine().getStatusCode() != 201 && !path.contains("/assignLicense?")) {
+            
+            if (response.getStatusLine().getStatusCode() == 400) {
+                // Error
+                log.info("Got a 400 error for this postRequest");
+                throw new ConnectorException("Error performing post request, error code "+response.getStatusLine().getStatusCode()+" "+response.getStatusLine().getReasonPhrase());
+            } else if (response.getStatusLine().getStatusCode() != 201 && !path.contains("/assignLicense?")) {
                 log.error("An error occured when creating user in Office 365");
                 StringBuffer sb = new StringBuffer();
                 if (entity != null && entity.getContent() != null ) {
