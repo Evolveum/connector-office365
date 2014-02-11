@@ -322,6 +322,8 @@ public class Office365UserOps {
         
         try {
             JSONObject lic = convertLicenseToJson(license);
+            
+            log.info("Attempting license assignment with {0}", lic.toString());
 
             Uid returnedUid = this.connector.getConnection().postRequest("/users/"+uid.getUidValue()+"/assignLicense?api-version="+Office365Connection.API_VERSION, lic);
             
@@ -427,7 +429,7 @@ String object = "{\"addLicenses\": [
                 if (components.length == 1) {
                     log.info("Only a license sku passed, no plans - all assumed");
                     // we have just a single sku with no specific plans
-                    licenseObj.put("disabledPlans", JSONObject.NULL);
+                    licenseObj.put("disabledPlans", new ArrayList<String>());
                 } else {
                     log.info("Plans passed with license");
                     // Need to do the inverse here and get the disables
