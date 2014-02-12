@@ -110,7 +110,7 @@ public class Office365UserOps {
                 value = AttributeUtil.getSingleValue(attr); // TODO handle multi value
                 usageLocationSet = true;
             } else if (attr.getName().equals(Office365Connector.IMMUTABLEID_ATTR)) {
-                value = this.encodeUUIDInMicrosoftFormat(AttributeUtil.getStringValue(attr)); // TODO make this configurable so we can support 'standard' base 64 encoding in the future
+                value = Office365Utils.encodeUUIDInMicrosoftFormat(AttributeUtil.getStringValue(attr)); // TODO make this configurable so we can support 'standard' base 64 encoding in the future
             } else {
                 value = AttributeUtil.getSingleValue(attr); // TODO handle multi value
             } 
@@ -213,7 +213,7 @@ public class Office365UserOps {
                 attrName = NAME_ATTRIBUTE;
             } else if (attr.getName().equals(Office365Connector.IMMUTABLEID_ATTR)) {
                 // TODO is it possible to even change this?
-                value = this.encodeUUIDInMicrosoftFormat(AttributeUtil.getStringValue(attr)); // TODO make this configurable so we can support 'standard' base 64 encoding in the future
+                value = Office365Utils.encodeUUIDInMicrosoftFormat(AttributeUtil.getStringValue(attr)); // TODO make this configurable so we can support 'standard' base 64 encoding in the future
             } else if (attr.getName().equals(Office365Connector.LICENSE_ATTR)) {
                 value = null;
                 boolean b = assignLicense(uid, AttributeUtil.getSingleValue(attr).toString());
@@ -416,7 +416,7 @@ public class Office365UserOps {
             String[] components = license.split(":");
             
             /*
-String object = "{\"addLicenses\": [
+                String object = "{\"addLicenses\": [
                                 { \"disabledPlans\": [\"SHAREPOINTWAC_EDU\" , \"SHAREPOINTSTANDARD_EDU\" ], 
                                 \"skuId\": \"314c4481-f395-4525-be8b-2ec4bb1e9d91\" }
                                 ], 
@@ -483,32 +483,6 @@ String object = "{\"addLicenses\": [
         } else {
             log.error("No license details passed");
             return null;
-        }
-    }
-    
-    private String encodeUUIDInMicrosoftFormat(String uuid) {
-        String s = uuid.replace("-", "");
-        String[] array = new String[16];
-        int pos = 0;
-        for (int i = 0; i < 16; i++) {
-            array[i] = s.substring(pos, pos+2);
-            pos+=2;
-        }
-        
-        String[] newArray = {array[3], array[2], array[1], array[0], array[5], array[4], array[7], array[6], array[8], array[9], array[10], array[11], array[12], array[13], array[14], array[15]};
-        
-        String ss = "";
-        for (int i =0 ; i < 16; i++) {
-            int num = Integer.parseInt(newArray[i], 16);
-            char c = (char) num;
-            ss = ss + c;
-        }
-        
-        try {
-            return Base64.encode(ss.getBytes("ISO-8859-1"));
-        }catch (UnsupportedEncodingException uee) {
-            log.error(uee, "Error converting uuid {0} to MS format",  uuid);
-            throw new ConnectorException("unable to convert uuid to MS format", uee);
         }
     }
     

@@ -3,8 +3,7 @@ General Information:
 Creates users within the Microsoft Azure Active Directory and assigns relevant 
 licenses granting azure to Azure AD based services including Office 365.
 
-Currently this only creates standard Managed Users and does not support 
-Federated Users or domains.
+Federated users now supported http://blogs.msdn.com/b/aadgraphteam/archive/2013/11/14/announcing-the-new-version-of-the-graph-api-api-version-2013-11-08.aspx
 
 Licenses:
 Licenses are assigned as: <license name>:<plan component>:<plan component>  (note plan component option, omission means all plans)

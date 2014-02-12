@@ -246,7 +246,9 @@ public class Office365ConnectorTests {
             obj.put("passwordProfile", pwd);
             obj.put("usageLocation", "GB");
 
-            obj.put("immutableId", Base64.encode("14c6c0c6-66fb-4c3c-a28e-a22a3e778dc4".getBytes()));
+            String uuid = "7fcef92e-384f-4d44-b284-e64da703c0cf";
+            
+            obj.put("immutableId", Office365Utils.encodeUUIDInMicrosoftFormat(uuid)); 
 
             LOGGER.info("About to create using  {0}", obj.toString());
             Uid uid = o365Conn.postRequest("/users?api-version="+Office365Connection.API_VERSION, obj);
@@ -486,7 +488,7 @@ public class Office365ConnectorTests {
         
         Assert.assertTrue(b);
     }
-
+    
     private Office365Configuration getConfiguration() {
     	Office365Configuration o365 = new Office365Configuration();
     	
