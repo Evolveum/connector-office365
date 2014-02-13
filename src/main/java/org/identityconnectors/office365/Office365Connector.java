@@ -293,11 +293,11 @@ public class Office365Connector implements
         objectClassInfoBuilderGroup.setType(ObjectClass.GROUP_NAME);
         objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("description", String.class));
         objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("displayName", String.class, EnumSet.of(Flags.REQUIRED)));
-        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("mail", String.class));
+        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("mail", String.class, EnumSet.of(Flags.NOT_CREATABLE, Flags.NOT_UPDATEABLE)));  // THIS IS read only
         objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("mailEnabled", Boolean.class, EnumSet.of(Flags.REQUIRED)));
         objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build(Name.NAME, String.class, EnumSet.of(Flags.REQUIRED))); // mailNickname
         objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("proxyAddresses", String.class, EnumSet.of(Flags.MULTIVALUED)));
-        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("securityEnabled", Boolean.class));
+        objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("securityEnabled", Boolean.class, EnumSet.of(Flags.REQUIRED)));
         objectClassInfoBuilderGroup.addAttributeInfo(AttributeInfoBuilder.build("members", String.class, EnumSet.of(Flags.MULTIVALUED)));
 
         this.schema = schemaBuilder.build();
