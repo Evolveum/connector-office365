@@ -38,6 +38,9 @@ import org.identityconnectors.framework.spi.ConfigurationProperty;
  */
 public class Office365Configuration extends AbstractConfiguration {
 
+    public static final String ENCODE_STRAIGHT_BASE64_STR = "straight-base64";  // Perform just a straight forward base64 encode
+    public static final String ENCODE_MS_BASE64_OPENICF_ADFS_STR = "ms-openicf-adfs-base64"; // Don't perform the bit reorder though do encode in the MS/ADFS format 
+    public static final String ENCODE_MS_BASE64_STR = "ms-base64"; // Switch the bits around as per MS UUID encode mechanism, no need to do this for AD connector feed UUID as the AD connector does this
 
     private final String protocol = "https://"; // Not configurable
     private String apiEndPoint = "graph.windows.net";
@@ -47,6 +50,7 @@ public class Office365Configuration extends AbstractConfiguration {
     private String principalID = null; // aa8de79f-4c6a-4f81-bcc7-61262226256a
     private String resourceID = "00000002-0000-0000-c000-000000000000";
     private String acsPrincipalID = "00000001-0000-0000-c000-000000000000";
+    private String immutableIDEncodeMechanism = ENCODE_STRAIGHT_BASE64_STR;
     
 
     /**
@@ -138,6 +142,17 @@ public class Office365Configuration extends AbstractConfiguration {
         this.acsPrincipalID = acsPrincipalID;
     }
     
+    @ConfigurationProperty(order = 8, displayMessageKey = "immutableIDEncodeMechanism.display",
+            groupMessageKey ="basic.group", helpMessageKey = "immutableIDEncodeMechanism.help",
+            confidential = false)
+    public String getImmutableIDEncodeMechanism() {
+        return immutableIDEncodeMechanism;
+    }
+    
+    public void setImmutableIDEncodeMechanism(String immutableIDEncodeMechanism) {
+        this.immutableIDEncodeMechanism = immutableIDEncodeMechanism;
+    }
+    
     /**
      * {@inheritDoc}
      */
@@ -167,6 +182,10 @@ public class Office365Configuration extends AbstractConfiguration {
         }
         
         if (StringUtil.isBlank(acsPrincipalID)) {
+            throw new IllegalArgumentException("ACS Principal ID cannot be null or empty.");
+        }
+
+        if (StringUtil.isBlank(immutableIDEncodeMechanism)) {
             throw new IllegalArgumentException("ACS Principal ID cannot be null or empty.");
         }
     }

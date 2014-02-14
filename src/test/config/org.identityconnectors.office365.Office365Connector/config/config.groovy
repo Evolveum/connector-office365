@@ -44,6 +44,7 @@ configuration{
     principalID = "28fa027a-0159-40cc-9449-a0fb08a41723"
     resourceID = "00000002-0000-0000-c000-000000000000";
     acsPrincipalID = "00000001-0000-0000-c000-000000000000";
+    immutableIDEncodeMechanism = "ms-base64";
 }
 
 testsuite {

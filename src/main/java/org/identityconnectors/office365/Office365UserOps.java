@@ -23,13 +23,11 @@
  */
 package org.identityconnectors.office365;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.identityconnectors.common.Base64;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.GuardedString;
 import org.identityconnectors.framework.common.exceptions.ConnectorException;
@@ -77,8 +75,14 @@ public class Office365UserOps {
             log.error("Name attribute is empty");
             throw new IllegalArgumentException("Name is mandatory on create events");
         }
-
+        
         log.ok("Name for create is {0}", name);
+        
+        if (this.connector.getConnection().isUserInAFederatedDomain(name.getNameValue()) 
+                && (AttributeUtil.toMap(createAttributes).get(Office365Connector.IMMUTABLEID_ATTR) == null)) {
+            log.error("User is in a federated domain, though no immutableID has been passed, this is required for a Federated User");
+            throw new IllegalArgumentException("User ("+name.getNameValue()+") is in a federated domain, though no immutableID has been passed, this is required for a Federated User");
+        }
 
         JSONObject jsonCreate = new JSONObject();
 
@@ -110,7 +114,7 @@ public class Office365UserOps {
                 value = AttributeUtil.getSingleValue(attr); // TODO handle multi value
                 usageLocationSet = true;
             } else if (attr.getName().equals(Office365Connector.IMMUTABLEID_ATTR)) {
-                value = Office365Utils.encodeUUIDInMicrosoftFormat(AttributeUtil.getStringValue(attr)); // TODO make this configurable so we can support 'standard' base 64 encoding in the future
+                value = this.connector.getConnection().encodedUUID(AttributeUtil.getStringValue(attr));
             } else {
                 value = AttributeUtil.getSingleValue(attr); // TODO handle multi value
             } 
@@ -213,7 +217,7 @@ public class Office365UserOps {
                 attrName = NAME_ATTRIBUTE;
             } else if (attr.getName().equals(Office365Connector.IMMUTABLEID_ATTR)) {
                 // TODO is it possible to even change this?
-                value = Office365Utils.encodeUUIDInMicrosoftFormat(AttributeUtil.getStringValue(attr)); // TODO make this configurable so we can support 'standard' base 64 encoding in the future
+                value = this.connector.getConnection().encodedUUID(AttributeUtil.getStringValue(attr));
             } else if (attr.getName().equals(Office365Connector.LICENSE_ATTR)) {
                 value = null;
                 boolean b = assignLicense(uid, AttributeUtil.getSingleValue(attr).toString());

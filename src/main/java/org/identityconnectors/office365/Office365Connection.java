@@ -26,6 +26,7 @@ package org.identityconnectors.office365;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -44,6 +45,7 @@ import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.identityconnectors.common.Base64;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.GuardedString;
 import org.identityconnectors.framework.common.exceptions.ConnectorException;
@@ -218,12 +220,8 @@ public class Office365Connection {
 
             // assignLicense returns 200
             
-            if (response.getStatusLine().getStatusCode() == 400) {
-                // Error
-                log.info("Got a 400 error for this postRequest");
-                throw new ConnectorException("Error performing post request, error code "+response.getStatusLine().getStatusCode()+" "+response.getStatusLine().getReasonPhrase());
-            } else if (response.getStatusLine().getStatusCode() != 201 && !path.contains("/assignLicense?")) {
-                log.error("An error occured when creating user in Office 365");
+            if ((response.getStatusLine().getStatusCode() != 201 && !path.contains("/assignLicense?")) || response.getStatusLine().getStatusCode() == 400) {
+                log.error("An error occured when creating object in Office 365, path was {0}", path);
                 StringBuffer sb = new StringBuffer();
                 if (entity != null && entity.getContent() != null ) {
                     BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
@@ -509,6 +507,27 @@ public class Office365Connection {
         return this.configuration.getProtocol()+ this.configuration.getApiEndPoint()+ "/" + this.configuration.getTenancy() + path;
     }
 
+
+    String encodedUUID(String uuid) {
+        log.info("Encoding uuid {0} with mechanism '{1}'", uuid, this.configuration.getImmutableIDEncodeMechanism());
+        if (this.configuration.getImmutableIDEncodeMechanism().equals(Office365Configuration.ENCODE_MS_BASE64_STR)) {
+            log.info("Encoding UUID with Microsoft format");
+            return Office365Utils.encodeUUIDInMicrosoftFormat(uuid);
+        } else if (this.configuration.getImmutableIDEncodeMechanism().equals(Office365Configuration.ENCODE_MS_BASE64_OPENICF_ADFS_STR)) {
+            log.info("Doing base64 encode in ADFS compatible format");
+            return Office365Utils.encodeUUIDInMicrosoftADFSFormat(uuid);
+        } else if (this.configuration.getImmutableIDEncodeMechanism().equals(Office365Configuration.ENCODE_STRAIGHT_BASE64_STR)) {
+            log.info("Encoding UUID with standard base64");
+            try {
+                return Base64.encode(uuid.getBytes("ISO-8859-1"));
+            }catch (UnsupportedEncodingException uee) {
+                throw new ConnectorException("unable to convert uuid "+uuid+"to MS format", uee);
+            }
+        } else {
+            log.info("No encoding of UUID, returning unaltered");
+            return uuid;
+        }
+    }
 
     /**
      * Release internal resources

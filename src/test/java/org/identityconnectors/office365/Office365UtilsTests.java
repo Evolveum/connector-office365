@@ -19,5 +19,4 @@ public class Office365UtilsTests {
         
         Assert.assertEquals(enc, expectedEncoding);
     }
-
 }

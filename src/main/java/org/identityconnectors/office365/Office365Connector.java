@@ -144,13 +144,10 @@ public class Office365Connector implements
             log.error("Name attribute is empty");
             throw new IllegalArgumentException("Name is mandatory on create events");
         }
+        
+        log.info("Name of {0} passed", name.getNameValue());
 
         if (objectClass.equals(ObjectClass.ACCOUNT)) {
-            if (this.connection.isUserInAFederatedDomain(name.getNameValue()) && (AttributeUtil.toMap(createAttributes).get(IMMUTABLEID_ATTR) == null)) {
-                log.error("User is in a federated domain, though no immutableID has been passed, this is required for a Federated User");
-                throw new IllegalArgumentException("User ("+name.getNameValue()+") is in a federated domain, though no immutableID has been passed, this is required for a Federated User");
-            }
-
         	return userOps.createUser(name, createAttributes);
         } else {
         	log.error("Invalid objectClass {0} specified", objectClass.getObjectClassValue());

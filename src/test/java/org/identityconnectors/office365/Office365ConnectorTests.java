@@ -23,6 +23,8 @@
  */
 package org.identityconnectors.office365;
 
+import java.sql.Connection;
+
 import org.identityconnectors.common.Base64;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.GuardedString;
@@ -66,6 +68,7 @@ public class Office365ConnectorTests {
     private static final String PRINCIPALID = properties.getStringProperty("configuration.principalID");
     private static final String RESOURCEID = properties.getStringProperty("configuration.resourceID");
     private static final String ACSPRINCIPALID = properties.getStringProperty("configuration.acsPrincipalID");
+    private static final String IMMUTABLEID_ENCODE = properties.getStringProperty("configuration.immutableIDEncodeMechanism");
 
     private static final String TEST_FEDERATED_DOMAIN = "feb14-fed.pheaney-dev.co.uk";
     private static final String TEST_MANAGED_DOMAIN = "ProofIDFeb14.onmicrosoft.com";
@@ -90,6 +93,7 @@ public class Office365ConnectorTests {
         Assert.assertNotNull(PRINCIPALID);
         Assert.assertNotNull(RESOURCEID);
         Assert.assertNotNull(ACSPRINCIPALID);
+        Assert.assertNotNull(IMMUTABLEID_ENCODE);
 
         //
         //other setup work to do before running tests
@@ -220,11 +224,7 @@ public class Office365ConnectorTests {
     /*
      * Federated domain
      */
-    
-    /*
-     * Non federated domain 
-     */
-    
+
     @Test
     public void testCreateFederated() {
         Office365Configuration config = getConfiguration();
@@ -248,7 +248,7 @@ public class Office365ConnectorTests {
 
             String uuid = "7fcef92e-384f-4d44-b284-e64da703c0cf";
             
-            obj.put("immutableId", Office365Utils.encodeUUIDInMicrosoftFormat(uuid)); 
+            obj.put("immutableId",  o365Conn.encodedUUID(uuid)); 
 
             LOGGER.info("About to create using  {0}", obj.toString());
             Uid uid = o365Conn.postRequest("/users?api-version="+Office365Connection.API_VERSION, obj);
@@ -489,6 +489,147 @@ public class Office365ConnectorTests {
         Assert.assertTrue(b);
     }
     
+    @Test
+    public void testUUIDEncodeMS() {
+        Office365Configuration config = getConfiguration();
+
+        config.setImmutableIDEncodeMechanism(Office365Configuration.ENCODE_MS_BASE64_STR);
+        
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+        
+        String guid = "14c6c0c6-66fb-4c3c-a28e-a22a3e778dc4";
+        String expectedEncoding = "xsDGFPtmPEyijqIqPneNxA==";
+        
+        String enc = o365Conn.encodedUUID(guid);
+
+        Assert.assertEquals(enc, expectedEncoding);
+    }
+    
+    @Test
+    public void testUUIDEncodeStandard() {
+        Office365Configuration config = getConfiguration();
+
+        config.setImmutableIDEncodeMechanism(Office365Configuration.ENCODE_STRAIGHT_BASE64_STR);
+        
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+        
+        String guid = "55c5435187826c4187606389254371bb";
+        String expectedEncoding = "NTVjNTQzNTE4NzgyNmM0MTg3NjA2Mzg5MjU0MzcxYmI=";
+        
+        String enc = o365Conn.encodedUUID(guid);
+
+        Assert.assertEquals(enc, expectedEncoding);
+    }
+    
+    @Test
+    public void testUUIDEncodeADFS() {
+        Office365Configuration config = getConfiguration();
+
+        config.setImmutableIDEncodeMechanism(Office365Configuration.ENCODE_MS_BASE64_OPENICF_ADFS_STR);
+        
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+        
+        String guid = "55c5435187826c4187606389254371bb";
+        String expectedEncoding = "VcVDUYeCbEGHYGOJJUNxuw==";
+        
+        String enc = o365Conn.encodedUUID(guid);
+
+        Assert.assertEquals(enc, expectedEncoding);
+    }
+    
+    @Test(enabled=false)
+    public void testCreateContact() {
+        
+        Office365Configuration config = getConfiguration();
+
+        Office365Connector conn = new Office365Connector();
+        conn.init(config);
+        
+        Office365ContactOps contactOps = new Office365ContactOps(conn);
+        Uid uid = contactOps.createContact(null,  null);
+        
+        /*
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        String token = Office365Connection.createToken(config);
+        Assert.assertNotNull(token);
+
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("displayName", "OpenICF Test1 Contact");
+            obj.put("mailNickname", "icf-test1-contact");
+            // obj.put("mail", "test@feb14-fed.pheaney-dev.co.uk");
+
+            LOGGER.info("About to create using  {0}", obj.toString());
+            Uid uid = o365Conn.postRequest("/contacts?api-version="+Office365Connection.API_VERSION, obj);
+            LOGGER.info("Got a UID of {0}", uid);
+            Assert.assertNotNull(uid);
+        } catch(JSONException je) {
+            LOGGER.error(je, "Error creating test contact structure");
+        }
+        */
+    }
+    
+    /*
+     * GROUPS
+     */
+    
+    @Test(enabled=false)
+    public void testCreateGroup() {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        String token = Office365Connection.createToken(config);
+        Assert.assertNotNull(token);
+
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("description", "Description");
+            obj.put("displayName", "OpenICF Test1 Group");
+            obj.put("mailNickname", "icf-test1-grp");
+            // obj.put("mail", "icf-test1-grp@"+TEST_MANAGED_DOMAIN);
+            obj.put("mailEnabled", false);
+            obj.put("securityEnabled", true);
+
+
+            LOGGER.info("About to create using  {0}", obj.toString());
+            Uid uid = o365Conn.postRequest("/groups?api-version="+Office365Connection.API_VERSION, obj);
+            LOGGER.info("Got a UID of {0}", uid);
+            Assert.assertNotNull(uid);
+        } catch(JSONException je) {
+            LOGGER.error(je, "Error creating test create group");
+        }
+    }
+    
+    @Test(dependsOnMethods={"testCreateGroup"},enabled=false)
+    public void testModifyGroup() {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        String token = Office365Connection.createToken(config);
+        Assert.assertNotNull(token);
+
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("department", "test");
+            obj.put("usageLocation", "GB");
+
+            boolean b = o365Conn.patchObject("/users/"+TEST_MANAGED_USER+"?api-version="+Office365Connection.API_VERSION, obj);
+
+            Assert.assertTrue(b);
+        } catch(JSONException je) {
+            LOGGER.error(je, "Error creating test modify structure");
+        }
+    }
+    
+    /*
+     * END GROUPS
+     */
+    
     private Office365Configuration getConfiguration() {
     	Office365Configuration o365 = new Office365Configuration();
     	
@@ -499,6 +640,7 @@ public class Office365ConnectorTests {
     	o365.setPrincipalID(PRINCIPALID);
     	o365.setResourceID(RESOURCEID);
     	o365.setAcsPrincipalID(ACSPRINCIPALID);
+    	o365.setImmutableIDEncodeMechanism(IMMUTABLEID_ENCODE);
     	
     	return o365;
     }
