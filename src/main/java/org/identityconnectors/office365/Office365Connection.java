@@ -131,14 +131,36 @@ public class Office365Connection {
         return null;
     }
     
+    private String getToken() {
+        log.info("getToken called");
+        if (this.token == null) {
+            log.info("No currently valid token attempting to retrieve");
+            int count = 0;
+            while (count < Office365Configuration.MAX_RECONNECT_ATTEMPTS) {
+                this.token = createToken(this.configuration);
+                if (this.token != null) {
+                    break;
+                } else {
+                    log.info("Failed to get token, attempting againt, request {0} of {1}", count, Office365Configuration.MAX_RECONNECT_ATTEMPTS);
+                }
+                count++;
+            }
+        }
 
+        return this.token;
+    }
+    
+    private void invalidateToken() {
+        log.info("Token invalidated");
+        this.token = null;
+    }
     
     public JSONObject getRequest(String path) {
         log.info("getRequest("+path+")");
 
         HttpGet get = new HttpGet(getAPIEndPoint(path));
 
-        get.addHeader("Authorization", this.token);
+        get.addHeader("Authorization", this.getToken());
         get.addHeader("Content-Type", "application/json;odata=verbose");
         get.addHeader("DataServiceVersion", "1.0;NetFx");
         get.addHeader("MaxDataServiceVersion", "3.0;NetFx");
@@ -152,6 +174,7 @@ public class Office365Connection {
 
             if (response.getStatusLine().getStatusCode() != 200) {
                 log.error("An error occured running a get operation");
+                this.invalidateToken();
                 StringBuffer sb = new StringBuffer();
                 if (entity != null && entity.getContent() != null ) {
                     BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
@@ -199,7 +222,7 @@ public class Office365Connection {
         log.info("postRequest("+path+")");
 
         HttpPost post = new HttpPost(getAPIEndPoint(path));
-        post.addHeader("Authorization", this.token);
+        post.addHeader("Authorization", this.getToken());
         // patch.addHeader("Content-Type", "application/json;odata=verbose");
         post.addHeader("DataServiceVersion", "3.0;NetFx");
         post.addHeader("MaxDataServiceVersion", "3.0;NetFx");
@@ -222,6 +245,7 @@ public class Office365Connection {
             
             if ((response.getStatusLine().getStatusCode() != 201 && !path.contains("/assignLicense?")) || response.getStatusLine().getStatusCode() == 400) {
                 log.error("An error occured when creating object in Office 365, path was {0}", path);
+                this.invalidateToken();
                 StringBuffer sb = new StringBuffer();
                 if (entity != null && entity.getContent() != null ) {
                     BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
@@ -265,7 +289,7 @@ public class Office365Connection {
 
         // http://msdn.microsoft.com/en-us/library/windowsazure/dn151671.aspx
         HttpPatch httpPatch = new HttpPatch(getAPIEndPoint(path));
-        httpPatch.addHeader("Authorization", this.token);
+        httpPatch.addHeader("Authorization", this.getToken());
         // patch.addHeader("Content-Type", "application/json;odata=verbose");
         httpPatch.addHeader("DataServiceVersion", "3.0;NetFx");
         httpPatch.addHeader("MaxDataServiceVersion", "3.0;NetFx");
@@ -284,6 +308,7 @@ public class Office365Connection {
 
             if (response.getStatusLine().getStatusCode() != 204) {
                 log.error("An error occured when modify an object in Office 365");
+                this.invalidateToken();
                 StringBuffer sb = new StringBuffer();
                 if (entity != null && entity.getContent() != null ) {
                     BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
@@ -314,7 +339,7 @@ public class Office365Connection {
         log.info("deleteRequest("+path+")");
         // http://msdn.microsoft.com/en-us/library/windowsazure/dn151676.aspx
         HttpDelete httpDelete = new HttpDelete(getAPIEndPoint(path));
-        httpDelete.addHeader("Authorization", this.token);
+        httpDelete.addHeader("Authorization", this.getToken());
         httpDelete.addHeader("Content-Type", "application/json");
         httpDelete.addHeader("DataServiceVersion", "3.0;NetFx");
         httpDelete.addHeader("MaxDataServiceVersion", "3.0;NetFx");
@@ -327,6 +352,7 @@ public class Office365Connection {
 
             if (response.getStatusLine().getStatusCode() != 204) {
                 log.error("An error occured when deleting an object in Office 365");
+                this.invalidateToken();
                 StringBuffer sb = new StringBuffer();
                 if (entity != null && entity.getContent() != null ) {
                     BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
