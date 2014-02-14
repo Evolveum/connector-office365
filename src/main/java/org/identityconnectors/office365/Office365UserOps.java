@@ -227,21 +227,18 @@ public class Office365UserOps {
                 value = AttributeUtil.getSingleValue(attr); // TODO handle multi value
             } 
 
-            if (value != null) {
-                log.info("Replacing attribute {0} with value {1}", attrName, value);
-                try {
-                    if (value instanceof String) {
-                        jsonModify.put(attrName, value.toString()); 
-                    } else {
-                        log.error("Attribute {0} of non recognised type {1}", attrName, value.getClass());
-                    }
-                } catch (JSONException je) {
-                    log.error(je, "Error adding JSON attribute {0} with value {1} on create - exception {}", attrName, value);
+            log.info("Replacing attribute {0} with value {1}", attrName, value);
+            try {
+                if (value == null) {
+                    // Attribute being removed
+                    jsonModify.put(attrName, JSONObject.NULL);
+                } else if (value instanceof String) {
+                    jsonModify.put(attrName, value.toString()); 
+                } else {
+                    log.error("Attribute {0} of non recognised type {1}", attrName, value.getClass());
                 }
-            }
-            else
-            {
-                log.info("Attribute {0} had a empty value", attrName);
+            } catch (JSONException je) {
+                log.error(je, "Error adding JSON attribute {0} with value {1} on create - exception {}", attrName, value);
             }
         }
 
