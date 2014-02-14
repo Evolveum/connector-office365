@@ -24,6 +24,7 @@
 package org.identityconnectors.office365;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 
 import org.identityconnectors.common.Base64;
 import org.identityconnectors.common.logging.Log;
@@ -152,6 +153,10 @@ public class Office365ConnectorTests {
             pwd.put("forceChangePasswordNextLogin", true);
             obj.put("passwordProfile", pwd);
             obj.put("usageLocation", "GB");
+            ArrayList<Object> otherEmails = new ArrayList<Object>();
+            otherEmails.add("test11@"+TEST_MANAGED_DOMAIN);
+            otherEmails.add("test12@"+TEST_MANAGED_DOMAIN);
+            obj.put("otherMails", otherEmails);
 
             LOGGER.info("About to create using  {0}", obj.toString());
             Uid uid = o365Conn.postRequest("/users?api-version="+Office365Connection.API_VERSION, obj);
@@ -536,6 +541,34 @@ public class Office365ConnectorTests {
 
         Assert.assertEquals(enc, expectedEncoding);
     }
+    
+    @Test
+    public void testIsAttributeMultiValued() {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connector conn = new Office365Connector();
+        conn.init(config);
+        
+        boolean b = conn.isAttributeMultiValues(ObjectClass.ACCOUNT_NAME, "otherMails");
+        
+        Assert.assertTrue(b);
+    }
+    
+    @Test
+    public void testIsAttributeSingleValued() {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connector conn = new Office365Connector();
+        conn.init(config);
+        
+        boolean b = conn.isAttributeMultiValues(ObjectClass.ACCOUNT_NAME, "mailNickname");
+        
+        Assert.assertFalse(b);
+    }
+    
+    /*
+     * Contact
+     */
     
     @Test(enabled=false)
     public void testCreateContact() {

@@ -29,6 +29,7 @@ import java.util.Set;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.GuardedString;
 import org.identityconnectors.framework.common.objects.Attribute;
+import org.identityconnectors.framework.common.objects.AttributeInfo;
 import org.identityconnectors.framework.common.objects.AttributeInfo.Flags;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
 import org.identityconnectors.framework.common.objects.AttributeUtil;
@@ -318,6 +319,20 @@ public class Office365Connector implements
 
     }
 
+    public boolean isAttributeMultiValues(String objectClass, String attrName) {
+        Schema schema = this.schema();
+        ObjectClassInfo oci = schema.findObjectClassInfo(objectClass);
+        for (AttributeInfo ai : oci.getAttributeInfo()) {
+            if(ai.getName().equals(attrName)) {
+                if (ai.getFlags().contains(Flags.MULTIVALUED)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
     public Office365Connection getConnection() {
     	if (this.connection == null) {
     		this.configuration.validate();

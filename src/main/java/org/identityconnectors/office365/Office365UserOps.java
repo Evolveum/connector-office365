@@ -37,6 +37,7 @@ import org.identityconnectors.framework.common.objects.AttributeUtil;
 import org.identityconnectors.framework.common.objects.ConnectorObject;
 import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.Name;
+import org.identityconnectors.framework.common.objects.ObjectClass;
 import org.identityconnectors.framework.common.objects.OperationOptions;
 import org.identityconnectors.framework.common.objects.OperationalAttributes;
 import org.identityconnectors.framework.common.objects.ResultsHandler;
@@ -97,6 +98,7 @@ public class Office365UserOps {
 
             Object value = null;
 
+            // All values in o365
             if (attr.getName().equals(OperationalAttributes.PASSWORD_NAME)) {
                 log.info("Got password attribute on user creation");
                 password = this.returnPassword(AttributeUtil.getGuardedStringValue(attr));
@@ -116,7 +118,11 @@ public class Office365UserOps {
             } else if (attr.getName().equals(Office365Connector.IMMUTABLEID_ATTR)) {
                 value = this.connector.getConnection().encodedUUID(AttributeUtil.getStringValue(attr));
             } else {
-                value = AttributeUtil.getSingleValue(attr); // TODO handle multi value
+                if (this.connector.isAttributeMultiValues(ObjectClass.ACCOUNT_NAME, attrName)) {
+                    value = attr.getValue();
+                } else {
+                    value = AttributeUtil.getSingleValue(attr);
+                }
             } 
 
             if (value != null) {
@@ -124,6 +130,8 @@ public class Office365UserOps {
                 try {
                     if (value instanceof String) {
                         jsonCreate.put(attrName, value.toString());
+                    } else if (value instanceof List) {
+                        jsonCreate.put(attrName, value);
                     } else if (value instanceof Boolean) {
                         jsonCreate.put(attrName, value);
                     } else {
@@ -224,7 +232,11 @@ public class Office365UserOps {
                 value = null;
                 license = AttributeUtil.getSingleValue(attr).toString();
             } else {
-                value = AttributeUtil.getSingleValue(attr); // TODO handle multi value
+                if (this.connector.isAttributeMultiValues(ObjectClass.ACCOUNT_NAME, attrName)) {
+                    value = attr.getValue();
+                } else {
+                    value = AttributeUtil.getSingleValue(attr);
+                }
             } 
 
             log.info("Replacing attribute {0} with value {1}", attrName, value);
@@ -233,7 +245,9 @@ public class Office365UserOps {
                     // Attribute being removed
                     jsonModify.put(attrName, JSONObject.NULL);
                 } else if (value instanceof String) {
-                    jsonModify.put(attrName, value.toString()); 
+                    jsonModify.put(attrName, value.toString());
+                } else if (value instanceof List) {
+                    jsonModify.put(attrName, value);
                 } else {
                     log.error("Attribute {0} of non recognised type {1}", attrName, value.getClass());
                 }

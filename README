@@ -17,6 +17,7 @@ LIMITATIONS
 
 TODO
 * Group memberships
+* Handle connectivity to o365 being unavailable - retry/cache events?
 * Multi valued attributes
 * Allow UPN change 
 * Test for query
