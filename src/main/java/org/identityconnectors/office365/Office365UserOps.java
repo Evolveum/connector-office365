@@ -228,7 +228,7 @@ public class Office365UserOps {
             } 
 
             if (value != null) {
-                log.info("Adding attribute {0} with value {1}", attrName, value);
+                log.info("Replacing attribute {0} with value {1}", attrName, value);
                 try {
                     if (value instanceof String) {
                         jsonModify.put(attrName, value.toString()); 
@@ -238,6 +238,10 @@ public class Office365UserOps {
                 } catch (JSONException je) {
                     log.error(je, "Error adding JSON attribute {0} with value {1} on create - exception {}", attrName, value);
                 }
+            }
+            else
+            {
+                log.info("Attribute {0} had a empty value", attrName);
             }
         }
 
@@ -262,7 +266,7 @@ public class Office365UserOps {
         }
 
         if (b) {
-            log.ok("Modified account 0} successfully", uid.getUidValue());
+            log.ok("Modified account {0} successfully", uid.getUidValue());
             
             if (license != null) {
                 log.info("Attempting to set the license");
