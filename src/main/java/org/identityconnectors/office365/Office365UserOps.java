@@ -202,6 +202,8 @@ public class Office365UserOps {
 
         String password = null;
         Boolean forceChangePasswordNextLogin = new Boolean(false);
+        
+        String license = null;
 
         for (Attribute attr : replaceAttributes) {
             String attrName = attr.getName();
@@ -220,12 +222,7 @@ public class Office365UserOps {
                 value = this.connector.getConnection().encodedUUID(AttributeUtil.getStringValue(attr));
             } else if (attr.getName().equals(Office365Connector.LICENSE_ATTR)) {
                 value = null;
-                boolean b = assignLicense(uid, AttributeUtil.getSingleValue(attr).toString());
-                if (b) {
-                    log.ok("License updated sucessfully on {0}", uid.getUidValue());
-                } else {
-                    log.error("Failed to update license on {0}", uid.getUidValue());
-                }
+                license = AttributeUtil.getSingleValue(attr).toString();
             } else {
                 value = AttributeUtil.getSingleValue(attr); // TODO handle multi value
             } 
@@ -266,6 +263,16 @@ public class Office365UserOps {
 
         if (b) {
             log.ok("Modified account 0} successfully", uid.getUidValue());
+            
+            if (license != null) {
+                log.info("Attempting to set the license");
+                b = assignLicense(uid, license);
+                if (b) {
+                    log.ok("License updated sucessfully on {0}", uid.getUidValue());
+                } else {
+                    log.error("Failed to update license on {0}", uid.getUidValue());
+                }
+            }
         } else {
             log.ok("Failed to modify account {0}", uid.getUidValue());
         }
