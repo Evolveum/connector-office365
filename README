@@ -1,0 +1,25 @@
+General Information:
+
+Creates users within the Microsoft Azure Active Directory and assigns relevant 
+licenses granting azure to Azure AD based services including Office 365.
+
+Currently this only creates standard Managed Users and does not support 
+Federated Users or domains.
+
+Licenses:
+Licenses are assigned as: <license name>:<plan component>:<plan component>  (note plan component option, omission means all plans)
+When assigning a license the usageLocation needs to be set.
+
+
+LIMITATIONS
+* Only currently handles users
+* Unable to create federated users via Graph API
+* Does not currently support change of UPN
+
+
+
+TODO
+* Group memberships
+* Multi valued attributes
+* Allow UPN change 
+* Test for query
