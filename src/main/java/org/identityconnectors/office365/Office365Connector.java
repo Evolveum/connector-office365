@@ -260,7 +260,7 @@ public class Office365Connector implements
         objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("givenName", String.class));
         objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("jobTitle", String.class));
         // license format   licensename:planname:planname:...
-        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build(LICENSE_ATTR, String.class, EnumSet.of(Flags.MULTIVALUED)));
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build(LICENSE_ATTR, String.class));
         objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("mail", String.class));
         objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("mailNickname", String.class, EnumSet.of(Flags.REQUIRED)));
         objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build("mobile", String.class));

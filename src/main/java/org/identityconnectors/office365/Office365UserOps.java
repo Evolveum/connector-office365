@@ -90,7 +90,7 @@ public class Office365UserOps {
         String password = null;
         Boolean forceChangePasswordNextLogin = new Boolean(false);
 
-        ArrayList<String> licenses = new ArrayList<String>();
+        String license = null;
         boolean usageLocationSet = false;
         
         for (Attribute attr : createAttributes ) {
@@ -111,9 +111,9 @@ public class Office365UserOps {
                 value = name.getNameValue().toString();
             } else if (attr.getName().equals(Office365Connector.LICENSE_ATTR)) {
                 value = null;
-                licenses.add(AttributeUtil.getSingleValue(attr).toString());
+                license = AttributeUtil.getSingleValue(attr).toString();
             } else if (attr.getName().equals(Office365Connector.USAGELOCATION_ATTR)) {
-                value = AttributeUtil.getSingleValue(attr); // TODO handle multi value
+                value = AttributeUtil.getSingleValue(attr);
                 usageLocationSet = true;
             } else if (attr.getName().equals(Office365Connector.IMMUTABLEID_ATTR)) {
                 value = this.connector.getConnection().encodedUUID(AttributeUtil.getStringValue(attr));
@@ -164,20 +164,16 @@ public class Office365UserOps {
 
         log.ok("Created account {0} successfully", name);
         
-        if (uid != null && licenses.size() > 0) {
+        if (uid != null && license != null) {
             log.info("Licenses to apply to newly created account");
             
             if (usageLocationSet) {
                 log.info("Usage location was set so we can assign license");
-                Iterator<String> it = licenses.iterator();
-                while (it.hasNext()) {
-                    String s = it.next();
-                    boolean b = assignLicense(uid, s);
-                    if (b) {
-                        log.ok("License {0} set on {1}", s, uid.getUidValue());
-                    } else {
-                        log.error("Failed to set license {0} set on {1}", s, uid.getUidValue());
-                    }
+                boolean b = assignLicense(uid, license);
+                if (b) {
+                    log.ok("License {0} set on {1}", license, uid.getUidValue());
+                } else {
+                    log.error("Failed to set license {0} set on {1}", license, uid.getUidValue());
                 }
             } else {
                 log.error("Usage Location not set on {0} unable to set license", uid.getUidValue());
