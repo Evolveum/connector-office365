@@ -582,10 +582,8 @@ public class Office365ConnectorTests {
         Office365Configuration config = getConfiguration();
 
         Office365Connection o365Conn = Office365Connection.createConnection(config);
-        
-        System.out.println("MANAGED: "+TEST_MANAGED_DOMAIN);
-        
-        boolean b = o365Conn.isUserInAFederatedDomain(TEST_MANAGED_DOMAIN);
+
+        boolean b = o365Conn.isUserInAFederatedDomain(TEST_MANAGED_USER);
         
         Assert.assertFalse(b);
     }

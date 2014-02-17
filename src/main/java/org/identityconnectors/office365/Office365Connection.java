@@ -460,7 +460,7 @@ public class Office365Connection {
             populateVerifiedDomains();
         }
 
-        return this.verifiedDomains.get(name);
+        return this.verifiedDomains.get(name.toLowerCase());
     }
 
 
@@ -477,7 +477,7 @@ public class Office365Connection {
                 JSONObject domainObj = verifiedDomains.getJSONObject(i);
 
                 Office365Domain domain = null;
-                String name = domainObj.getString("name");
+                String name = domainObj.getString("name").toLowerCase();
                 String type = domainObj.getString("type"); 
                 if (type.equals("Federated")) {
                     log.info("Got a Federated domain named {0}", name);
