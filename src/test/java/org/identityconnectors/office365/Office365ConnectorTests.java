@@ -566,6 +566,30 @@ public class Office365ConnectorTests {
         Assert.assertFalse(b);
     }
     
+    @Test
+    public void testIsDomainFederatedFed() {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+        
+        boolean b = o365Conn.isUserInAFederatedDomain(TEST_FEDERATED_USER);
+        
+        Assert.assertTrue(b);
+    }
+    
+    @Test
+    public void testIsDomainFederatedNonFed() {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+        
+        System.out.println("MANAGED: "+TEST_MANAGED_DOMAIN);
+        
+        boolean b = o365Conn.isUserInAFederatedDomain(TEST_MANAGED_DOMAIN);
+        
+        Assert.assertFalse(b);
+    }
+    
     /*
      * Contact
      */
