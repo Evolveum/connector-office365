@@ -23,7 +23,6 @@
  */
 package org.identityconnectors.office365;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 
 import org.identityconnectors.common.Base64;
