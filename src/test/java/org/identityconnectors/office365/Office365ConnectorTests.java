@@ -70,8 +70,8 @@ public class Office365ConnectorTests {
     private static final String ACSPRINCIPALID = properties.getStringProperty("configuration.acsPrincipalID");
     private static final String IMMUTABLEID_ENCODE = properties.getStringProperty("configuration.immutableIDEncodeMechanism");
 
-    private static final String TEST_FEDERATED_DOMAIN = "feb14-fed.pheaney-dev.co.uk";
-    private static final String TEST_MANAGED_DOMAIN = "ProofIDFeb14.onmicrosoft.com";
+    private static final String TEST_FEDERATED_DOMAIN = "ucisa14.pheaney-dev.co.uk";
+    private static final String TEST_MANAGED_DOMAIN = "ProofIDucisa14.onmicrosoft.com";
 
     private static final String TEST_FEDERATED_USER = "icf-test1@"+TEST_FEDERATED_DOMAIN;
     private static final String TEST_MANAGED_USER = "icf-test1@"+TEST_MANAGED_DOMAIN;
