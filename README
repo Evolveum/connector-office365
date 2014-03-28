@@ -17,8 +17,7 @@ LIMITATIONS
 
 TODO
 * Group memberships
-* Handle connectivity to o365 being unavailable - retry/cache events?
+* Handle connectivity to o365 being unavailable - retry/cache events? / Test
 * Multi valued attributes
 * Allow UPN change 
 * Test for query
-* Unable to create federated users via Graph API
