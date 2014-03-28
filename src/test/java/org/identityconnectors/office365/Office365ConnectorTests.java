@@ -232,6 +232,8 @@ public class Office365ConnectorTests {
     @Test
     public void testCreateFederated() {
         Office365Configuration config = getConfiguration();
+        // TODO we need to test with other encoding mechanisms
+        config.setImmutableIDEncodeMechanism(Office365Configuration.ENCODE_MS_BASE64_OPENICF_ADFS_STR);
 
         Office365Connection o365Conn = Office365Connection.createConnection(config);
 
@@ -585,45 +587,6 @@ public class Office365ConnectorTests {
         boolean b = o365Conn.isUserInAFederatedDomain(TEST_MANAGED_USER);
         
         Assert.assertFalse(b);
-    }
-    
-    /*
-     * Contact
-     */
-    
-    @Test(enabled=false)
-    public void testCreateContact() {
-        
-        Office365Configuration config = getConfiguration();
-
-        Office365Connector conn = new Office365Connector();
-        conn.init(config);
-        
-        Office365ContactOps contactOps = new Office365ContactOps(conn);
-        Uid uid = contactOps.createContact(null,  null);
-        
-        /*
-        Office365Configuration config = getConfiguration();
-
-        Office365Connection o365Conn = Office365Connection.createConnection(config);
-
-        String token = Office365Connection.createToken(config);
-        Assert.assertNotNull(token);
-
-        try {
-            JSONObject obj = new JSONObject();
-            obj.put("displayName", "OpenICF Test1 Contact");
-            obj.put("mailNickname", "icf-test1-contact");
-            // obj.put("mail", "test@feb14-fed.pheaney-dev.co.uk");
-
-            LOGGER.info("About to create using  {0}", obj.toString());
-            Uid uid = o365Conn.postRequest("/contacts?api-version="+Office365Connection.API_VERSION, obj);
-            LOGGER.info("Got a UID of {0}", uid);
-            Assert.assertNotNull(uid);
-        } catch(JSONException je) {
-            LOGGER.error(je, "Error creating test contact structure");
-        }
-        */
     }
     
     /*
