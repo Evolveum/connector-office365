@@ -24,6 +24,7 @@
 package org.identityconnectors.office365;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.identityconnectors.common.Base64;
 import org.identityconnectors.common.logging.Log;
@@ -643,15 +644,52 @@ public class Office365ConnectorTests {
         }
     }
     
+    // TODO these are hard coded to my tenancy at the moment, need to finish create group etc
+    String groupID = "0ebfc0e4-c818-4292-86e7-9664bb5c31ab";
+    String userID = "68d2910f-e055-4a55-bc19-582ab7630e5c";
+    
     @Test
-    public void testAssignGroupMembership() {
+    public void testGroupMembershipAssign() {
         
         Office365Connector o365 = new Office365Connector();
         o365.init(getConfiguration());
         
         Office365GroupOps group = new Office365GroupOps(o365);
         
-        boolean b = group.addUserToGroup("0ebfc0e4-c818-4292-86e7-9664bb5c31ab", "68d2910f-e055-4a55-bc19-582ab7630e5c");
+        boolean b = group.addUserToGroup(groupID, userID);
+        
+        Assert.assertTrue(b);
+        
+        List<String> groups = group.getUserGroups(userID);
+        
+        Assert.assertEquals(groups.size(), 1);
+        
+        Assert.assertTrue(groups.get(0).equals(groupID));
+    }
+    
+    @Test(dependsOnMethods={"testGroupMembershipAssign"})
+    public void testGroupMembershipMembersSet() {
+        
+        Office365Connector o365 = new Office365Connector();
+        o365.init(getConfiguration());
+        
+        Office365GroupOps group = new Office365GroupOps(o365);
+        
+        List<String> groups = group.getUserGroups(userID);
+        
+        Assert.assertEquals(groups.size(), 1);
+        
+        Assert.assertTrue(groups.get(0).equals(groupID));
+    }
+    
+    @Test(dependsOnMethods={"testGroupMembershipMembersSet"})
+    public void testGroupMembershipRemove() {
+        Office365Connector o365 = new Office365Connector();
+        o365.init(getConfiguration());
+        
+        Office365GroupOps group = new Office365GroupOps(o365);
+        
+        boolean b = group.removeUserFromGroup(groupID, userID);
         
         Assert.assertTrue(b);
     }

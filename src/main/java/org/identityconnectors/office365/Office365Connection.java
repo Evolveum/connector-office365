@@ -286,6 +286,80 @@ public class Office365Connection {
             throw new ConnectorException("Exception whilst doing POST to "+path);
         }
     }
+    
+    // Consider mergng with postRquest and getRequest as very similar...
+    public JSONObject postRequestReturnJson(String path, JSONObject body) {
+
+        log.info("postRequestReturnJson("+path+")");
+
+        HttpPost post = new HttpPost(getAPIEndPoint(path));
+        post.addHeader("Authorization", this.getToken());
+        // patch.addHeader("Content-Type", "application/json;odata=verbose");
+        post.addHeader("DataServiceVersion", "3.0;NetFx");
+        post.addHeader("MaxDataServiceVersion", "3.0;NetFx");
+        post.addHeader("Accept", "application/json"); // DIFF from above
+
+        EntityBuilder eb = EntityBuilder.create();
+        eb.setText(body.toString());
+        eb.setContentType(ContentType.create("application/json"));
+        post.setEntity(eb.build());
+
+        HttpClient httpClient = HttpClientBuilder.create().build();
+
+        try {
+            HttpResponse response = httpClient.execute(post);
+            HttpEntity entity = response.getEntity();
+
+            log.info("Status code from postRequest is {0}", response.getStatusLine().getStatusCode());
+
+            // assignLicense returns 200
+            
+            if (response.getStatusLine().getStatusCode() != 200) {
+                log.error("An error occured when querying object in Office 365, path was {0}", path);
+                this.invalidateToken();
+                StringBuffer sb = new StringBuffer();
+                if (entity != null && entity.getContent() != null ) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
+                    String s = null;
+
+                    log.info("Response :{0}", response.getStatusLine().toString());
+
+                    while ((s = in.readLine()) != null) {
+                        sb.append(s);
+                        log.info(s);
+                    }
+                }
+                throw new ConnectorException("Error on post to "+path+" and body of "+body.toString()+". Error code: "+response.getStatusLine().getStatusCode()+" Received the following response "+sb.toString());
+            } else {
+                
+                StringBuffer sb = new StringBuffer();
+                if (entity != null && entity.getContent() != null ) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
+                    String s = null;
+
+                    log.info("Response :{0}", response.getStatusLine().toString());
+
+                    while ((s = in.readLine()) != null) {
+                        sb.append(s);
+                    }
+                }
+
+                log.info ("Received in response to postRequestReturnJson("+path+") :'"+sb.toString().trim()+"'");
+
+                return new JSONObject(sb.toString().trim());
+                
+            }
+        }catch (ClientProtocolException cpe) {
+            log.error(cpe, "Error doing postRequestReturnJson to path {0}", path);
+            throw new ConnectorException("Exception whilst doing POST to "+path);
+        } catch (IOException ioe){
+            log.error(ioe, "IOE Error doing postRequestReturnJson to path {0}", path);
+            throw new ConnectorException("Exception whilst doing POST to "+path);
+        } catch (JSONException je) {
+            log.error(je,  "Error parsing JSON from get request to path {0}", path);
+            throw new ConnectorException("Exception which converting to JSON "+path);
+        }
+    }
 
     public boolean patchObject(String path, JSONObject body) {
         log.info("patchRequest("+path+")");
@@ -334,7 +408,7 @@ public class Office365Connection {
         } catch (IOException ioe){
             log.error(ioe, "IOE Error doing patchRequest to path {0}", path);
             throw new ConnectorException("Exception whilst doing PATCH to "+path);
-        }
+        } 
     }
 
 

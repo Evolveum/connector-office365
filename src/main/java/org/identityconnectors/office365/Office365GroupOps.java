@@ -5,6 +5,8 @@ package org.identityconnectors.office365;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -17,6 +19,7 @@ import org.identityconnectors.framework.common.exceptions.ConnectorException;
 import org.identityconnectors.framework.common.objects.Attribute;
 import org.identityconnectors.framework.common.objects.Name;
 import org.identityconnectors.framework.common.objects.Uid;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -62,7 +65,7 @@ public class Office365GroupOps {
         log.info("Entered addUserToGroup");
         if (groupID != null && userID != null)
         {
-            log.info("Hot user and group IDs");
+            log.info("Got user and group IDs");
             JSONObject update = new JSONObject();
 
             String value = this.connector.getConfiguration().getProtocol()+ connector.getConfiguration().getApiEndPoint()+ "/" + connector.getConfiguration().getTenancy() + "/directoryObjects/"+userID;
@@ -70,7 +73,7 @@ public class Office365GroupOps {
             try {
                 update.put("url", value); // Copied from getAPIEndPoint
             } catch (JSONException je) {
-                log.error(je, "Error adding JSON attribute url with value {1} on create - exception {}", value);
+                log.error(je, "Error adding JSON attribute url with value {0} on create - exception {1}", value, je);
             }
             
             try {
@@ -89,7 +92,67 @@ public class Office365GroupOps {
             log.error("Not supplied both a group and user ID");
             return false;
         }
+    }
+    
+    /**
+     * Gets the list of groups a user is member of
+     * @param uid
+     * @return
+     */
+    public List<String> getUserGroups(String userID) {
+        log.info("Entered getUserGroups");
         
+        if (userID != null) {
+            JSONObject json = new JSONObject();
+            try {
+                json.put("securityEnabledOnly", false);
+            } catch (JSONException je) {
+                log.error("Error creating JSON filter,  error {0}", je);
+            }
+            
+            JSONObject jo = null;
+            
+            try {
+                jo = this.connector.getConnection().postRequestReturnJson("/users/"+userID+"/getMemberGroups?api-version="+Office365Connection.API_VERSION, json);
+            } catch (ConnectorException ce) {
+                log.error(ce, "Error getting group membership for {0} exception {1}", userID, ce);
+                return null;
+            }
+            
+            List<String> groups = new ArrayList<String>();
+            
+            try {
+                JSONArray array = jo.getJSONArray("value");
+                for (int i = 0; i < array.length(); i++) {
+                    groups.add(array.getString(i));
+                }
+            } catch (JSONException je) {
+                log.error(je, "Error getting parsing group membership");
+                return null;
+            }
+            
+            return groups;
+            
+        } else {
+            log.error("No user ID supplied");
+            return null;
+        }
+    }
+    
+    public boolean removeUserFromGroup(String groupID, String userID) {
+        log.info("Enetered removeUserFromGroup");
+        
+        if (groupID != null && userID != null)
+        {
+            log.info("Got user and group ID");
+            
+            return this.connector.getConnection().deleteRequest("/groups/"+groupID+"/$links/members/"+userID+"?api-version="+Office365Connection.API_VERSION);
+        }
+        else
+        {
+            log.error("Not supplied both a group and user ID");
+            return false;
+        }
     }
     
     public static void main(String[] args) throws Exception {

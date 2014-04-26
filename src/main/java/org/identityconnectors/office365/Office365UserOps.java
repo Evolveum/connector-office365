@@ -390,8 +390,8 @@ public class Office365UserOps {
         log.info("Processing group memberships");
 
         if (uid == null) {
-            log.error("No UID specified on assignLicense");
-            throw new IllegalArgumentException("No UID specified for assignLicense");
+            log.error("No UID specified on handleGroupMemberships");
+            throw new IllegalArgumentException("No UID specified for handleGroupMemberships");
         }
         
         log.ok("UID of {0} is present", uid.getUidValue());
@@ -402,6 +402,22 @@ public class Office365UserOps {
         }
         
         Office365GroupOps groupOps = new Office365GroupOps(this.connector);
+        
+        // TEMP
+        List<String> existingGroups = groupOps.getUserGroups(uid.getUidValue());
+        if (groups != null) {
+            for (String group : existingGroups) {
+                if (groups.contains(group)) {
+                    // We don't need to add as its already there
+                    groups.remove(group);
+                } else {
+                    // Remove the user from he group they are already in but not due in afterwards
+                    groupOps.removeUserFromGroup(group,  uid.getUidValue());
+                }
+            }
+        }
+        
+        // END TEMP
         
         boolean toReturn = true;
         
@@ -417,7 +433,7 @@ public class Office365UserOps {
             log.info("Finished processing group membership successfully");
             return true;
         } else {
-            log.error("Failed to sucessfully process grup membership");
+            log.error("Failed to sucessfully process group membership");
             return false;
         }
     }
