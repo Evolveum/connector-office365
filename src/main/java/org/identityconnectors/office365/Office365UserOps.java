@@ -89,6 +89,7 @@ public class Office365UserOps {
 
         String password = null;
         Boolean forceChangePasswordNextLogin = new Boolean(false);
+        List<Object> groups = null;
 
         String license = null;
         boolean usageLocationSet = false;
@@ -117,6 +118,9 @@ public class Office365UserOps {
                 usageLocationSet = true;
             } else if (attr.getName().equals(Office365Connector.IMMUTABLEID_ATTR)) {
                 value = this.connector.getConnection().encodedUUID(AttributeUtil.getStringValue(attr));
+            } else if (attr.getName().equals(Office365Connector.GROUP_ATTR)) {
+                value = null;
+                groups = attr.getValue();
             } else {
                 if (this.connector.isAttributeMultiValues(ObjectClass.ACCOUNT_NAME, attrName)) {
                     value = attr.getValue();
@@ -153,7 +157,7 @@ public class Office365UserOps {
                 log.error(je, "Error adding password to JSON attribute");
             }
         }
-
+        
         log.info("About to create account using JSON {0}", jsonCreate.toString());
 
         try {
@@ -178,6 +182,10 @@ public class Office365UserOps {
             } else {
                 log.error("Usage Location not set on {0} unable to set license", uid.getUidValue());
             }
+        }
+        
+        if (groups != null) {
+            handleGroupMemberships(uid, groups); // Logging done in method
         }
 
         return uid;
@@ -206,6 +214,7 @@ public class Office365UserOps {
 
         String password = null;
         Boolean forceChangePasswordNextLogin = new Boolean(false);
+        List<Object> groups = null;
         
         String license = null;
 
@@ -227,6 +236,9 @@ public class Office365UserOps {
             } else if (attr.getName().equals(Office365Connector.LICENSE_ATTR)) {
                 value = null;
                 license = AttributeUtil.getSingleValue(attr).toString();
+            } else if (attr.getName().equals(Office365Connector.GROUP_ATTR)) {
+                value = null;
+                groups = attr.getValue();
             } else {
                 if (this.connector.isAttributeMultiValues(ObjectClass.ACCOUNT_NAME, attrName)) {
                     value = attr.getValue();
@@ -286,6 +298,10 @@ public class Office365UserOps {
             }
         } else {
             log.ok("Failed to modify account {0}", uid.getUidValue());
+        }
+        
+        if (groups != null) {
+            handleGroupMemberships(uid, groups); // Logging done in method
         }
 
         return uid;
@@ -367,6 +383,42 @@ public class Office365UserOps {
         } catch (JSONException je) {
             log.error(je, "Error converting license {0} to JSON for {1}", license, uid.getUidValue());
             throw new ConnectorException("Error converting license "+license+" to JSON for "+uid.getUidValue(), je);
+        }
+    }
+    
+    public boolean handleGroupMemberships(Uid uid, List<Object> groups) {
+        log.info("Processing group memberships");
+
+        if (uid == null) {
+            log.error("No UID specified on assignLicense");
+            throw new IllegalArgumentException("No UID specified for assignLicense");
+        }
+        
+        log.ok("UID of {0} is present", uid.getUidValue());
+        
+        if (groups == null) {
+            log.error("No groups passed to handleGroupMemberships");
+            return false;
+        }
+        
+        Office365GroupOps groupOps = new Office365GroupOps(this.connector);
+        
+        boolean toReturn = true;
+        
+        for (Object group : groups) {
+            boolean b = groupOps.addUserToGroup((String) group, uid.getUidValue());
+            if (!b) {
+                log.error("Unable to add {0} to group {1}", group, uid.getUidValue());
+            }
+            toReturn &= b;
+        }
+
+        if (toReturn) {
+            log.info("Finished processing group membership successfully");
+            return true;
+        } else {
+            log.error("Failed to sucessfully process grup membership");
+            return false;
         }
     }
 

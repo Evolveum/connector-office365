@@ -74,6 +74,7 @@ public class Office365Connector implements
     public static final String LICENSE_ATTR = "licenses";
     public static final String USAGELOCATION_ATTR = "usageLocation";
     public static final String IMMUTABLEID_ATTR = "immutableId";
+    public static final String GROUP_ATTR = "groupMembership";
     
     /**
      * Setup logging for the {@link Office365Connector}.
@@ -99,7 +100,7 @@ public class Office365Connector implements
     /**
      * Gets the Configuration context for this connector.
      */
-    public Configuration getConfiguration() {
+    public Office365Configuration getConfiguration() {
         return this.configuration;
     }
 
@@ -283,6 +284,8 @@ public class Office365Connector implements
         objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build(Name.NAME, String.class, EnumSet.of(Flags.REQUIRED)));  // userPrinciaplName 
         // Operation Attributes
         objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build(OperationalAttributes.PASSWORD_NAME, GuardedString.class, EnumSet.of(Flags.NOT_READABLE, Flags.NOT_RETURNED_BY_DEFAULT)));
+        // Temp hack
+        objectClassInfoBuilderUser.addAttributeInfo(AttributeInfoBuilder.build(GROUP_ATTR, String.class));
 
         ObjectClassInfo oci = objectClassInfoBuilderUser.build();
         schemaBuilder.defineObjectClass(oci);

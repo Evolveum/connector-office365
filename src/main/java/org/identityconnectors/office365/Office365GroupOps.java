@@ -13,9 +13,11 @@ import javax.xml.bind.DatatypeConverter;
 import org.codehaus.groovy.runtime.ConversionHandler;
 import org.identityconnectors.common.Base64;
 import org.identityconnectors.common.logging.Log;
+import org.identityconnectors.framework.common.exceptions.ConnectorException;
 import org.identityconnectors.framework.common.objects.Attribute;
 import org.identityconnectors.framework.common.objects.Name;
 import org.identityconnectors.framework.common.objects.Uid;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -53,6 +55,41 @@ public class Office365GroupOps {
         
 
         return uid;
+    }
+    
+    public boolean addUserToGroup(String groupID, String userID)
+    {
+        log.info("Entered addUserToGroup");
+        if (groupID != null && userID != null)
+        {
+            log.info("Hot user and group IDs");
+            JSONObject update = new JSONObject();
+
+            String value = this.connector.getConfiguration().getProtocol()+ connector.getConfiguration().getApiEndPoint()+ "/" + connector.getConfiguration().getTenancy() + "/directoryObjects/"+userID;
+
+            try {
+                update.put("url", value); // Copied from getAPIEndPoint
+            } catch (JSONException je) {
+                log.error(je, "Error adding JSON attribute url with value {1} on create - exception {}", value);
+            }
+            
+            try {
+                this.connector.getConnection().postRequest("/groups/"+groupID+"/$links/members?api-version="+Office365Connection.API_VERSION, update);
+            }  catch (ConnectorException ce) {
+                log.error(ce, "Error adding group member {0} to {1}", userID, groupID);
+                return false;
+            }
+            
+            log.info("Sucessfully added group member");
+            
+            return true;
+        }
+        else
+        {
+            log.error("Not supplied both a group and user ID");
+            return false;
+        }
+        
     }
     
     public static void main(String[] args) throws Exception {

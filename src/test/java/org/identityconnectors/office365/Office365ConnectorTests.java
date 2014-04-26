@@ -643,6 +643,19 @@ public class Office365ConnectorTests {
         }
     }
     
+    @Test
+    public void testAssignGroupMembership() {
+        
+        Office365Connector o365 = new Office365Connector();
+        o365.init(getConfiguration());
+        
+        Office365GroupOps group = new Office365GroupOps(o365);
+        
+        boolean b = group.addUserToGroup("0ebfc0e4-c818-4292-86e7-9664bb5c31ab", "68d2910f-e055-4a55-bc19-582ab7630e5c");
+        
+        Assert.assertTrue(b);
+    }
+    
     /*
      * END GROUPS
      */

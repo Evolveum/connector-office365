@@ -217,6 +217,7 @@ public class Office365Connection {
     }
 
 
+    // TODO pass in expected response code as this is starting to get messy
     public Uid postRequest(String path, JSONObject body) {
 
         log.info("postRequest("+path+")");
@@ -243,7 +244,7 @@ public class Office365Connection {
 
             // assignLicense returns 200
             
-            if ((response.getStatusLine().getStatusCode() != 201 && !path.contains("/assignLicense?")) || response.getStatusLine().getStatusCode() == 400) {
+            if ((response.getStatusLine().getStatusCode() != 201 && !path.contains("/assignLicense?") && !(path.contains("/groups/") && path.contains("/$links/members"))) || response.getStatusLine().getStatusCode() == 400) {
                 log.error("An error occured when creating object in Office 365, path was {0}", path);
                 this.invalidateToken();
                 StringBuffer sb = new StringBuffer();
@@ -260,6 +261,8 @@ public class Office365Connection {
                 }
                 throw new ConnectorException("Error on post to "+path+" and body of "+body.toString()+". Error code: "+response.getStatusLine().getStatusCode()+" Received the following response "+sb.toString());
             } else if (path.contains("/assignLicense?") && response.getStatusLine().getStatusCode() == 200){
+                return SUCCESS_UID;
+            } else if (path.contains("/groups/") && path.contains("/$links/members") && response.getStatusLine().getStatusCode() == 204) {
                 return SUCCESS_UID;
             } else {
                 Header[] location = response.getHeaders("Location");
