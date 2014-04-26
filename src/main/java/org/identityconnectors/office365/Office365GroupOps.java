@@ -17,6 +17,7 @@ import org.identityconnectors.common.Base64;
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.common.exceptions.ConnectorException;
 import org.identityconnectors.framework.common.objects.Attribute;
+import org.identityconnectors.framework.common.objects.AttributeUtil;
 import org.identityconnectors.framework.common.objects.Name;
 import org.identityconnectors.framework.common.objects.Uid;
 import org.json.JSONArray;
@@ -31,13 +32,15 @@ public class Office365GroupOps {
 
     private Office365Connector connector;
     private static final Log log = Log.getLog(Office365UserOps.class);
+    
+    private static final String NAME_ATTRIBUTE = "mailNickname";
 
     public Office365GroupOps(Office365Connector connector) {
         this.connector = connector;
     }
 
     public Uid createGroup(Name name, final Set<Attribute> createAttributes) {
-        log.info("Entered createGroup");
+        log.info("Entered createSecurityGroup");
 
         Uid uid = null;
 
@@ -54,8 +57,51 @@ public class Office365GroupOps {
         log.ok("Name for create is {0}", name);
 
         JSONObject jsonCreate = new JSONObject();
+
+        try {
+            // The Graph API only supports this combination (as of 014-04-26)
+            jsonCreate.put("mailEnabled", false);
+            jsonCreate.put("securityEnabled", true);
+        } catch (JSONException je) {
+            log.error(je, "Error adding mandatory JSON attributes on create");
+        }
         
-        
+        for (Attribute attr : createAttributes) {
+            String attrName = attr.getName();
+            Object value = null;
+            
+            if (attr.getName().equals(Name.NAME)) {
+                attrName = NAME_ATTRIBUTE;
+                value = name.getNameValue();
+            } else {
+                value = AttributeUtil.getSingleValue(attr); // TODO handle multivalued
+            }
+            
+            if (value != null) {
+                log.info("Adding attribute {0} with value {1}", attrName, value);
+                try {
+                    if (value instanceof String) {
+                        jsonCreate.put(attrName, value);
+                    } else if (value instanceof Boolean) {
+                        jsonCreate.put(attrName, value);
+                    } else {
+                        log.error("Attribute {0} of non recognised type {1}", attrName, value.getClass());
+                    }
+                } catch (JSONException je) {
+                    log.error(je, "Error adding JSON attribute {0} with value {1} on create - exception {}", attrName, value);
+                }
+            }
+        }
+
+        log.info("About to create group using JSON {0}",  jsonCreate.toString());
+
+        try {
+            uid = connector.getConnection().postRequest("/groups?api-version="+Office365Connection.API_VERSION, jsonCreate);
+        } catch (ConnectorException ce) {
+            log.error(ce, "Error creating group {0}", name);
+        }
+
+        log.ok("Create group {0} successfully",  name);
 
         return uid;
     }

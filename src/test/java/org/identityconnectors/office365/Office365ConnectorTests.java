@@ -594,7 +594,12 @@ public class Office365ConnectorTests {
      * GROUPS
      */
     
-    @Test(enabled=false)
+    // TODO these are hard coded to my tenancy at the moment, need to finish create group etc
+    String groupID = null;
+    String userID = "68d2910f-e055-4a55-bc19-582ab7630e5c";
+    
+    
+    @Test
     public void testCreateGroup() {
         Office365Configuration config = getConfiguration();
 
@@ -617,6 +622,8 @@ public class Office365ConnectorTests {
             Uid uid = o365Conn.postRequest("/groups?api-version="+Office365Connection.API_VERSION, obj);
             LOGGER.info("Got a UID of {0}", uid);
             Assert.assertNotNull(uid);
+            
+            this.groupID = uid.getUidValue();
         } catch(JSONException je) {
             LOGGER.error(je, "Error creating test create group");
         }
@@ -643,12 +650,8 @@ public class Office365ConnectorTests {
             LOGGER.error(je, "Error creating test modify structure");
         }
     }
-    
-    // TODO these are hard coded to my tenancy at the moment, need to finish create group etc
-    String groupID = "0ebfc0e4-c818-4292-86e7-9664bb5c31ab";
-    String userID = "68d2910f-e055-4a55-bc19-582ab7630e5c";
-    
-    @Test
+   
+    @Test(dependsOnMethods={"testCreateGroup"})
     public void testGroupMembershipAssign() {
         
         Office365Connector o365 = new Office365Connector();
@@ -691,6 +694,19 @@ public class Office365ConnectorTests {
         
         boolean b = group.removeUserFromGroup(groupID, userID);
         
+        Assert.assertTrue(b);
+    }
+    
+    @Test(dependsOnMethods={"testGroupMembershipRemove", "testGroupMembershipAssign"})
+    public void testDeleteGroup() {
+        Office365Configuration config = getConfiguration();
+
+        Office365Connection o365Conn = Office365Connection.createConnection(config);
+
+        String token = Office365Connection.createToken(config);
+        Assert.assertNotNull(token);
+
+        boolean b = o365Conn.deleteRequest("/groups/"+groupID+"?api-version="+Office365Connection.API_VERSION);
         Assert.assertTrue(b);
     }
     
