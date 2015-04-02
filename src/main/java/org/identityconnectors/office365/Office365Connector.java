@@ -211,13 +211,13 @@ public class Office365Connector implements
      * {@inheritDoc}
      */
     public void test() {
-        log.info("test");
+//        log.info("test");
 
         this.getConnection().test();
 
         log.info("test ok");
 
-        throw new UnsupportedOperationException();
+//        throw new UnsupportedOperationException();
     }
 
     /**
