@@ -215,12 +215,10 @@ public class Office365UserOps {
             Object value = null;
 
             if (attr.getName().equals(OperationalAttributes.PASSWORD_NAME)) {
-                log.info("Got password attribute on user modification");
+                log.info("Changing password on user modification");
                 password = this.returnPassword(AttributeUtil.getGuardedStringValue(attr));
             } else if (attr.getName().equals("forceChangePasswordNextLogin")) {
                 forceChangePasswordNextLogin = AttributeUtil.getBooleanValue(attr);
-            } else if (attr.getName().equals(Name.NAME)) {
-                attrName = NAME_ATTRIBUTE;
             } else if (attr.getName().equals(Office365Connector.IMMUTABLEID_ATTR)) {
                 // TODO is it possible to even change this?
                 value = this.connector.getConnection().encodedUUID(AttributeUtil.getStringValue(attr));
@@ -228,6 +226,9 @@ public class Office365UserOps {
                 value = null;
                 license = AttributeUtil.getSingleValue(attr).toString();
             } else {
+                if (attr.getName().equals(Name.NAME)) {
+                    attrName = NAME_ATTRIBUTE;
+                }
                 if (this.connector.isAttributeMultiValues(ObjectClass.ACCOUNT_NAME, attrName)) {
                     value = attr.getValue();
                 } else {
@@ -238,8 +239,10 @@ public class Office365UserOps {
             log.info("Replacing attribute {0} with value {1}", attrName, value);
             try {
                 if (value == null) {
-                    // Attribute being removed
-                    jsonModify.put(attrName, JSONObject.NULL);
+                    // Attribute being removed, excludes password
+                    if (!attr.getName().equals(OperationalAttributes.PASSWORD_NAME)) {
+                        jsonModify.put(attrName, JSONObject.NULL);
+                    }
                 } else if (value instanceof String) {
                     jsonModify.put(attrName, value.toString());
                 } else if (value instanceof List) {
