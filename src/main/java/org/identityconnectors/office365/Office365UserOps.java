@@ -238,17 +238,20 @@ public class Office365UserOps {
 
             log.info("Replacing attribute {0} with value {1}", attrName, value);
             try {
-                if (value == null) {
-                    // Attribute being removed, excludes password
-                    if (!attr.getName().equals(OperationalAttributes.PASSWORD_NAME)) {
-                        jsonModify.put(attrName, JSONObject.NULL);
+                // Strip license from JSON
+                if (!attrName.equals(Office365Connector.LICENSE_ATTR)) {
+                    if (value == null) {
+                        // Attribute being removed, excludes password
+                        if (!attr.getName().equals(OperationalAttributes.PASSWORD_NAME)) {
+                            jsonModify.put(attrName, JSONObject.NULL);
+                        }
+                    } else if (value instanceof String) {
+                        jsonModify.put(attrName, value.toString());
+                    } else if (value instanceof List) {
+                        jsonModify.put(attrName, value);
+                    } else {
+                        log.error("Attribute {0} of non recognised type {1}", attrName, value.getClass());
                     }
-                } else if (value instanceof String) {
-                    jsonModify.put(attrName, value.toString());
-                } else if (value instanceof List) {
-                    jsonModify.put(attrName, value);
-                } else {
-                    log.error("Attribute {0} of non recognised type {1}", attrName, value.getClass());
                 }
             } catch (JSONException je) {
                 log.error(je, "Error adding JSON attribute {0} with value {1} on create - exception {}", attrName, value);
