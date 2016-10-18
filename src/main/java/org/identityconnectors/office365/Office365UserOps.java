@@ -211,7 +211,7 @@ public class Office365UserOps {
 
         for (Attribute attr : replaceAttributes) {
             String attrName = attr.getName();
-
+            
             Object value = null;
 
             if (attr.getName().equals(OperationalAttributes.PASSWORD_NAME)) {
@@ -224,6 +224,7 @@ public class Office365UserOps {
                 value = this.connector.getConnection().encodedUUID(AttributeUtil.getStringValue(attr));
             } else if (attr.getName().equals(Office365Connector.LICENSE_ATTR)) {
                 value = null;
+                // TODO Identify that the license is changing from any value to null
                 license = AttributeUtil.getSingleValue(attr).toString();
             } else {
                 if (attr.getName().equals(Name.NAME)) {
@@ -238,21 +239,21 @@ public class Office365UserOps {
 
             log.info("Replacing attribute {0} with value {1}", attrName, value);
             try {
-                // Strip license from JSON
-                if (!attrName.equals(Office365Connector.LICENSE_ATTR)) {
-                    if (value == null) {
-                        // Attribute being removed, excludes password
-                        if (!attr.getName().equals(OperationalAttributes.PASSWORD_NAME)) {
-                            jsonModify.put(attrName, JSONObject.NULL);
-                        }
-                    } else if (value instanceof String) {
-                        jsonModify.put(attrName, value.toString());
-                    } else if (value instanceof List) {
-                        jsonModify.put(attrName, value);
-                    } else {
-                        log.error("Attribute {0} of non recognised type {1}", attrName, value.getClass());
-                    }
-                }
+            	//Strip License from the JSON
+            	if(!attrName.equals(Office365Connector.LICENSE_ATTR)){
+                	if (value == null) {
+                    	// Attribute being removed, excludes password
+                    	if (!attr.getName().equals(OperationalAttributes.PASSWORD_NAME)) {
+                    	    jsonModify.put(attrName, JSONObject.NULL);
+                    	}
+                	} else if (value instanceof String) {
+                    		jsonModify.put(attrName, value.toString());
+                	} else if (value instanceof List) {
+                    		jsonModify.put(attrName, value);
+                	} else {
+                    		log.error("Attribute {0} of non recognised type {1}", attrName, value.getClass());
+                	}
+            	}
             } catch (JSONException je) {
                 log.error(je, "Error adding JSON attribute {0} with value {1} on create - exception {}", attrName, value);
             }
@@ -280,7 +281,7 @@ public class Office365UserOps {
 
         if (b) {
             log.ok("Modified account {0} successfully", uid.getUidValue());
-
+            // TODO Identify when the license is changing and if the value is null
             if (license != null) {
                 log.info("Attempting to set the license");
                 b = assignLicense(uid, license);
@@ -363,7 +364,49 @@ public class Office365UserOps {
         }
 
         log.ok("License of {0} received for uid {1}", license, uid.getUidValue());
-
+        
+        /*
+         * The Connector handles only single values only
+         * The assignLicense Function does not support to remove and add the same license modifying the plans
+         * so we need to remove the license first and then add the other license and plans 
+         */
+        log.ok("Query user for existing license(s) to be removed prior to set new license.");
+        try
+        {
+        	JSONObject myUser = this.connector.getConnection().getRequest("/users/" + uid.getUidValue() + "?api-version=" + Office365Connection.API_VERSION);
+        	log.info("User Information {0}", myUser);
+        	JSONArray userAssignedLicenses = myUser.getJSONArray("assignedLicenses");
+        	if(userAssignedLicenses.length() != 0){
+	        	log.info("User Assigned Licenses {0}", userAssignedLicenses);        	
+	        	log.info("User Assigned sKuId {0}", userAssignedLicenses.getJSONObject(0).getString("skuId"));        	        	
+	        	for (int i = 0; i < userAssignedLicenses.length(); i++) { 
+	        		if(userAssignedLicenses.getJSONObject(i).getString("skuId") != null){
+		        		JSONObject license2remove = new JSONObject();
+		        		license2remove.put("addLicenses", JSONObject.NULL);
+		        		log.ok("User SkuID License {0}", userAssignedLicenses.getJSONObject(i).getString("skuId"));
+		        		
+		        		ArrayList<String> unwantedLicenses = new ArrayList<String>();
+		        		unwantedLicenses.add(userAssignedLicenses.getJSONObject(i).getString("skuId"));
+		        		license2remove.put("removeLicenses", unwantedLicenses);
+		        		log.info("Remove License JSON {0}", license2remove);
+		        		Uid returnedUid = this.connector.getConnection().postRequest("/users/" + uid.getUidValue() + "/assignLicense?api-version=" + Office365Connection.API_VERSION, license2remove);
+		        		if (returnedUid != null && returnedUid.equals(Office365Connection.SUCCESS_UID)) {
+		                    log.info("License removed successfully to {0}", uid.getUidValue());
+		                    
+		                } else {
+		                    log.error("Failed to remove license");
+		                    
+		                }
+	        		}
+	        	}
+        	}
+        }
+        catch (Exception e)
+        {
+        log.error(e, "Error removing existing license(s).");
+                   throw new ConnectorException("Error removing existing license(s). ", e);
+        }
+                
         try {
             JSONObject lic = convertLicenseToJson(license);
 
@@ -448,7 +491,7 @@ public class Office365UserOps {
         log.info("convertLicenseToJson");
 
         if (license != null && license.length() > 0) {
-            log.info("Licnese string passed");
+            log.info("License string passed");
             String[] components = license.split(":");
 
             /*
