@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.GuardedString;
+import org.identityconnectors.framework.common.exceptions.AlreadyExistsException;
 import org.identityconnectors.framework.common.exceptions.ConnectorException;
 import org.identityconnectors.framework.common.objects.Attribute;
 import org.identityconnectors.framework.common.objects.AttributeBuilder;
@@ -86,6 +87,7 @@ public class Office365UserOps {
             throw new IllegalArgumentException("User (" + name.getNameValue() + ") is in a federated domain, though no immutableID has been passed, this is required for a Federated User");
         }
 
+
         JSONObject jsonCreate = new JSONObject();
 
         String password = null;
@@ -125,7 +127,7 @@ public class Office365UserOps {
                     value = AttributeUtil.getSingleValue(attr);
                 }
             }
-
+            
             if (value != null) {
                 log.info("Adding attribute {0} with value {1}", attrName, value);
                 try {
@@ -158,9 +160,19 @@ public class Office365UserOps {
         log.info("About to create account using JSON {0}", jsonCreate.toString());
 
         try {
-            uid = connector.getConnection().postRequest("/users?api-version=" + Office365Connection.API_VERSION, jsonCreate);
-        } catch (ConnectorException ce) {
+            uid = connector.getConnection().postRequest("/users?api-version=" + Office365Connection.API_VERSION, jsonCreate);            
+        } 
+        catch(Office365Exception oe)
+        {
+        	//Verify error if user Exist
+        	if(oe.getErrorCode().equals(400) && oe.getErrorMessage().contains("Another object with the same value for property userPrincipalName already exists.")){
+        		log.error("User Already exists {0}", name.getNameValue());
+        		throw new AlreadyExistsException(oe.getMessage(),oe);
+        	}
+    	}catch (ConnectorException ce) {
             log.error(ce, "Error creating user {0}", name);
+            log.error("Reason: {0}", ce.getMessage());
+            log.error("Localized Message: {0}", ce.getLocalizedMessage());           
         }
 
         log.ok("Created account {0} successfully", name);
