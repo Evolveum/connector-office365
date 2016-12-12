@@ -192,7 +192,7 @@ public class Office365Connection {
                     }
                 }
 
-                log.info("Received in response to getRequest(" + path + ") :'" + sb.toString().trim() + "'");
+                log.info("Received in response to getRequest ({0}) : {1}", path, sb.toString().trim());
 
                 return new JSONObject(sb.toString().trim());
             }
