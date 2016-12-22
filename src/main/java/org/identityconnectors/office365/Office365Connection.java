@@ -192,7 +192,7 @@ public class Office365Connection {
                     }
                 }
 
-                log.info("Received in response to getRequest(" + path + ") :'" + sb.toString().trim() + "'");
+                log.info("Received in response to getRequest ({0}) : {1}", path, sb.toString().trim());
 
                 return new JSONObject(sb.toString().trim());
             }
@@ -253,7 +253,10 @@ public class Office365Connection {
                         log.info(s);
                     }
                 }
-                throw new ConnectorException("Error on post to " + path + " and body of " + body.toString() + ". Error code: " + response.getStatusLine().getStatusCode() + " Received the following response " + sb.toString());
+                log.error("Error on post to {0}  and body of {1}. Error code: {2} Received the following response: {3}", path, body.toString(), response.getStatusLine().getStatusCode(), sb.toString());
+                throw new Office365Exception(response.getStatusLine().getStatusCode(), sb.toString());
+                //throw new ConnectorException("Error on post to " + path + " and body of " + body.toString() + ". Error code: " + response.getStatusLine().getStatusCode() + " Received the following response " + sb.toString());
+                
             } else if (path.contains("/assignLicense?") && response.getStatusLine().getStatusCode() == 200) {
                 return SUCCESS_UID;
             } else {
