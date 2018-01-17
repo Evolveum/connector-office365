@@ -14,6 +14,12 @@ LIMITATIONS
 * Only currently handles users
 * Does not currently support change of UPN
 
+Build:
+* build:
+    mvn package
+* build with tests (requires proper connection parameters in config.groovy):
+    mvn package -DskipTests=false
+
 
 TODO
 * Group memberships
