@@ -266,7 +266,9 @@ public class Office365UserOps {
                 	} else if (value instanceof String) {
                     		jsonModify.put(attrName, value.toString());
                 	} else if (value instanceof List) {
-                    		jsonModify.put(attrName, value);
+                            jsonModify.put(attrName, value);
+                    } else if (value instanceof Boolean) {
+                            jsonModify.put(attrName, value);
                 	} else {
                     		log.error("Attribute {0} of non recognised type {1}", attrName, value.getClass());
                 	}
